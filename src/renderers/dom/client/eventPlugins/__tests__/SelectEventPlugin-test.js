@@ -30,7 +30,8 @@ describe('SelectEventPlugin', function() {
       topLevelEvent,
       node,
       ReactMount.getID(node),
-      {target: node}
+      {target: node},
+      node
     );
   }
 
@@ -52,7 +53,7 @@ describe('SelectEventPlugin', function() {
     var WithoutSelect = React.createClass({
       render: function() {
         return <input type="text" />;
-      }
+      },
     });
 
     var rendered = ReactTestUtils.renderIntoDocument(<WithoutSelect />);
@@ -72,7 +73,7 @@ describe('SelectEventPlugin', function() {
     var WithSelect = React.createClass({
       render: function() {
         return <input type="text" onSelect={this.props.onSelect} />;
-      }
+      },
     });
 
     var cb = mocks.getMockFunction();

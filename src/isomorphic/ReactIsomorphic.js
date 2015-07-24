@@ -14,7 +14,7 @@
 var ReactChildren = require('ReactChildren');
 var ReactComponent = require('ReactComponent');
 var ReactClass = require('ReactClass');
-var ReactDOM = require('ReactDOM');
+var ReactDOMFactories = require('ReactDOMFactories');
 var ReactElement = require('ReactElement');
 var ReactElementValidator = require('ReactElementValidator');
 var ReactPropTypes = require('ReactPropTypes');
@@ -40,7 +40,7 @@ var React = {
     map: ReactChildren.map,
     forEach: ReactChildren.forEach,
     count: ReactChildren.count,
-    only: onlyChild
+    only: onlyChild,
   },
 
   Component: ReactComponent,
@@ -61,10 +61,10 @@ var React = {
 
   // This looks DOM specific but these are actually isomorphic helpers
   // since they are just generating DOM strings.
-  DOM: ReactDOM,
+  DOM: ReactDOMFactories,
 
   // Hook for JSX spread, don't use this for anything else.
-  __spread: assign
+  __spread: assign,
 };
 
 module.exports = React;

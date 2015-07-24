@@ -55,7 +55,7 @@ describe('ReactPropTypes', function() {
   });
 
   describe('Primitive Types', function() {
-    it("should warn for invalid strings", function() {
+    it('should warn for invalid strings', function() {
       typeCheckFail(
         PropTypes.string,
         [],
@@ -97,7 +97,7 @@ describe('ReactPropTypes', function() {
       );
     });
 
-    it("should not warn for valid values", function() {
+    it('should not warn for valid values', function() {
       typeCheckPass(PropTypes.array, []);
       typeCheckPass(PropTypes.bool, false);
       typeCheckPass(PropTypes.func, function() {});
@@ -108,12 +108,12 @@ describe('ReactPropTypes', function() {
       typeCheckPass(PropTypes.object, /please/);
     });
 
-    it("should be implicitly optional and not warn without values", function() {
+    it('should be implicitly optional and not warn without values', function() {
       typeCheckPass(PropTypes.string, null);
       typeCheckPass(PropTypes.string, undefined);
     });
 
-    it("should warn for missing required values", function() {
+    it('should warn for missing required values', function() {
       typeCheckFail(PropTypes.string.isRequired, null, requiredMessage);
       typeCheckFail(PropTypes.string.isRequired, undefined, requiredMessage);
     });
@@ -126,12 +126,12 @@ describe('ReactPropTypes', function() {
       typeCheckPass(PropTypes.any, []);
     });
 
-    it("should be implicitly optional and not warn without values", function() {
+    it('should be implicitly optional and not warn without values', function() {
       typeCheckPass(PropTypes.any, null);
       typeCheckPass(PropTypes.any, undefined);
     });
 
-    it("should warn for missing required values", function() {
+    it('should warn for missing required values', function() {
       typeCheckFail(PropTypes.any.isRequired, null, requiredMessage);
       typeCheckFail(PropTypes.any.isRequired, undefined, requiredMessage);
     });
@@ -203,12 +203,12 @@ describe('ReactPropTypes', function() {
       typeCheckPass(PropTypes.arrayOf(PropTypes.number), []);
     });
 
-    it("should be implicitly optional and not warn without values", function() {
+    it('should be implicitly optional and not warn without values', function() {
       typeCheckPass(PropTypes.arrayOf(PropTypes.number), null);
       typeCheckPass(PropTypes.arrayOf(PropTypes.number), undefined);
     });
 
-    it("should warn for missing required values", function() {
+    it('should warn for missing required values', function() {
       typeCheckFail(
         PropTypes.arrayOf(PropTypes.number).isRequired,
         null,
@@ -226,12 +226,12 @@ describe('ReactPropTypes', function() {
     beforeEach(function() {
       Component = React.createClass({
         propTypes: {
-          label: PropTypes.element.isRequired
+          label: PropTypes.element.isRequired,
         },
 
         render: function() {
           return <div>{this.props.label}</div>;
-        }
+        },
       });
       spyOn(console, 'error');
     });
@@ -263,19 +263,19 @@ describe('ReactPropTypes', function() {
       expect(console.error.argsForCall.length).toBe(1);
     });
 
-    it("should be implicitly optional and not warn without values", function() {
+    it('should be implicitly optional and not warn without values', function() {
       typeCheckPass(PropTypes.element, null);
       typeCheckPass(PropTypes.element, undefined);
     });
 
-    it("should warn for missing required values", function() {
+    it('should warn for missing required values', function() {
       typeCheckFail(PropTypes.element.isRequired, null, requiredMessage);
       typeCheckFail(PropTypes.element.isRequired, undefined, requiredMessage);
     });
   });
 
   describe('Instance Types', function() {
-    it("should warn for invalid instances", function() {
+    it('should warn for invalid instances', function() {
       function Person() {}
       var personName = Person.name || '<<anonymous>>';
       var dateName = Date.name || '<<anonymous>>';
@@ -313,7 +313,7 @@ describe('ReactPropTypes', function() {
       );
     });
 
-    it("should not warn for valid values", function() {
+    it('should not warn for valid values', function() {
       function Person() {}
       function Engineer() {}
       Engineer.prototype = new Person();
@@ -325,12 +325,12 @@ describe('ReactPropTypes', function() {
       typeCheckPass(PropTypes.instanceOf(RegExp), /please/);
     });
 
-    it("should be implicitly optional and not warn without values", function() {
+    it('should be implicitly optional and not warn without values', function() {
       typeCheckPass(PropTypes.instanceOf(String), null);
       typeCheckPass(PropTypes.instanceOf(String), undefined);
     });
 
-    it("should warn for missing required values", function() {
+    it('should warn for missing required values', function() {
       typeCheckFail(
         PropTypes.instanceOf(String).isRequired, null, requiredMessage
       );
@@ -345,7 +345,7 @@ describe('ReactPropTypes', function() {
       MyComponent = React.createClass({
         render: function() {
           return <div />;
-        }
+        },
       });
     });
 
@@ -371,7 +371,7 @@ describe('ReactPropTypes', function() {
         'Some string',
         <div />,
         ['Another string', [456], <span />, <MyComponent />],
-        <MyComponent />
+        <MyComponent />,
       ]);
 
       // Object of renderable things
@@ -383,10 +383,10 @@ describe('ReactPropTypes', function() {
         k3: frag({
           k30: <MyComponent />,
           k31: frag({k310: <a />}),
-          k32: 'Another string'
+          k32: 'Another string',
         }),
         k4: null,
-        k5: undefined
+        k5: undefined,
       }));
       expect(console.error.calls).toEqual([]);
 
@@ -398,11 +398,44 @@ describe('ReactPropTypes', function() {
         k3: {
           k30: <MyComponent />,
           k31: {k310: <a />},
-          k32: 'Another string'
+          k32: 'Another string',
         },
         k4: null,
-        k5: undefined
+        k5: undefined,
       });
+    });
+
+    it('should not warn for iterables', function() {
+      var iterable = {
+        '@@iterator': function() {
+          var i = 0;
+          return {
+            next: function() {
+              var done = ++i > 2;
+              return {value: done ? undefined : <MyComponent />, done: done};
+            },
+          };
+        },
+      };
+
+      typeCheckPass(PropTypes.node, iterable);
+    });
+
+    it('should not warn for entry iterables', function() {
+      var iterable = {
+        '@@iterator': function() {
+          var i = 0;
+          return {
+            next: function() {
+              var done = ++i > 2;
+              return {value: done ? undefined : ['#' + i, <MyComponent />], done: done};
+            },
+          };
+        },
+      };
+      iterable.entries = iterable['@@iterator'];
+
+      typeCheckPass(PropTypes.node, iterable);
     });
 
     it('should not warn for null/undefined if not required', function() {
@@ -500,12 +533,12 @@ describe('ReactPropTypes', function() {
       typeCheckPass(PropTypes.objectOf(PropTypes.number), {});
     });
 
-    it("should be implicitly optional and not warn without values", function() {
+    it('should be implicitly optional and not warn without values', function() {
       typeCheckPass(PropTypes.objectOf(PropTypes.number), null);
       typeCheckPass(PropTypes.objectOf(PropTypes.number), undefined);
     });
 
-    it("should warn for missing required values", function() {
+    it('should warn for missing required values', function() {
       typeCheckFail(
         PropTypes.objectOf(PropTypes.number).isRequired,
         null,
@@ -520,7 +553,7 @@ describe('ReactPropTypes', function() {
   });
 
   describe('OneOf Types', function() {
-    it("should fail for invalid argument", function() {
+    it('should fail for invalid argument', function() {
       typeCheckFail(
         PropTypes.oneOf('red', 'blue'),
         'red',
@@ -528,7 +561,7 @@ describe('ReactPropTypes', function() {
       );
     });
 
-    it("should warn for invalid strings", function() {
+    it('should warn for invalid strings', function() {
       typeCheckFail(
         PropTypes.oneOf(['red', 'blue']),
         true,
@@ -555,17 +588,17 @@ describe('ReactPropTypes', function() {
       );
     });
 
-    it("should not warn for valid values", function() {
+    it('should not warn for valid values', function() {
       typeCheckPass(PropTypes.oneOf(['red', 'blue']), 'red');
       typeCheckPass(PropTypes.oneOf(['red', 'blue']), 'blue');
     });
 
-    it("should be implicitly optional and not warn without values", function() {
+    it('should be implicitly optional and not warn without values', function() {
       typeCheckPass(PropTypes.oneOf(['red', 'blue']), null);
       typeCheckPass(PropTypes.oneOf(['red', 'blue']), undefined);
     });
 
-    it("should warn for missing required values", function() {
+    it('should warn for missing required values', function() {
       typeCheckFail(
         PropTypes.oneOf(['red', 'blue']).isRequired,
         null,
@@ -580,7 +613,7 @@ describe('ReactPropTypes', function() {
   });
 
   describe('Union Types', function() {
-    it("should fail for invalid argument", function() {
+    it('should fail for invalid argument', function() {
       typeCheckFail(
         PropTypes.oneOfType(PropTypes.string, PropTypes.number),
         'red',
@@ -597,7 +630,7 @@ describe('ReactPropTypes', function() {
 
       var checker = PropTypes.oneOfType([
         PropTypes.shape({a: PropTypes.number.isRequired}),
-        PropTypes.shape({b: PropTypes.number.isRequired})
+        PropTypes.shape({b: PropTypes.number.isRequired}),
       ]);
       typeCheckFail(
         checker,
@@ -609,7 +642,7 @@ describe('ReactPropTypes', function() {
     it('should not warn if one of the types are valid', function() {
       var checker = PropTypes.oneOfType([
         PropTypes.string,
-        PropTypes.number
+        PropTypes.number,
       ]);
       typeCheckPass(checker, null);
       typeCheckPass(checker, 'foo');
@@ -617,13 +650,13 @@ describe('ReactPropTypes', function() {
 
       checker = PropTypes.oneOfType([
         PropTypes.shape({a: PropTypes.number.isRequired}),
-        PropTypes.shape({b: PropTypes.number.isRequired})
+        PropTypes.shape({b: PropTypes.number.isRequired}),
       ]);
       typeCheckPass(checker, {a: 1});
       typeCheckPass(checker, {b: 1});
     });
 
-    it("should be implicitly optional and not warn without values", function() {
+    it('should be implicitly optional and not warn without values', function() {
       typeCheckPass(
         PropTypes.oneOfType([PropTypes.string, PropTypes.number]), null
       );
@@ -632,7 +665,7 @@ describe('ReactPropTypes', function() {
       );
     });
 
-    it("should warn for missing required values", function() {
+    it('should warn for missing required values', function() {
       typeCheckFail(
         PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
         null,
@@ -647,7 +680,7 @@ describe('ReactPropTypes', function() {
   });
 
   describe('Shape Types', function() {
-    it("should warn for non objects", function() {
+    it('should warn for non objects', function() {
       typeCheckFail(
         PropTypes.shape({}),
         'some string',
@@ -662,25 +695,25 @@ describe('ReactPropTypes', function() {
       );
     });
 
-    it("should not warn for empty values", function() {
+    it('should not warn for empty values', function() {
       typeCheckPass(PropTypes.shape({}), undefined);
       typeCheckPass(PropTypes.shape({}), null);
       typeCheckPass(PropTypes.shape({}), {});
     });
 
-    it("should not warn for an empty object", function() {
+    it('should not warn for an empty object', function() {
       typeCheckPass(PropTypes.shape({}).isRequired, {});
     });
 
-    it("should not warn for non specified types", function() {
+    it('should not warn for non specified types', function() {
       typeCheckPass(PropTypes.shape({}), {key: 1});
     });
 
-    it("should not warn for valid types", function() {
+    it('should not warn for valid types', function() {
       typeCheckPass(PropTypes.shape({key: PropTypes.number}), {key: 1});
     });
 
-    it("should warn for required valid types", function() {
+    it('should warn for required valid types', function() {
       typeCheckFail(
         PropTypes.shape({key: PropTypes.number.isRequired}),
         {},
@@ -688,18 +721,18 @@ describe('ReactPropTypes', function() {
       );
     });
 
-    it("should warn for the first required type", function() {
+    it('should warn for the first required type', function() {
       typeCheckFail(
         PropTypes.shape({
           key: PropTypes.number.isRequired,
-          secondKey: PropTypes.number.isRequired
+          secondKey: PropTypes.number.isRequired,
         }),
         {},
         'Required prop `testProp.key` was not specified in `testComponent`.'
       );
     });
 
-    it("should warn for invalid key types", function() {
+    it('should warn for invalid key types', function() {
       typeCheckFail(PropTypes.shape({key: PropTypes.number}),
         {key: 'abc'},
         'Invalid prop `testProp.key` of type `string` supplied to `testComponent`, ' +
@@ -707,7 +740,7 @@ describe('ReactPropTypes', function() {
       );
     });
 
-    it("should be implicitly optional and not warn without values", function() {
+    it('should be implicitly optional and not warn without values', function() {
       typeCheckPass(
         PropTypes.shape(PropTypes.shape({key: PropTypes.number})), null
       );
@@ -716,7 +749,7 @@ describe('ReactPropTypes', function() {
       );
     });
 
-    it("should warn for missing required values", function() {
+    it('should warn for missing required values', function() {
       typeCheckFail(
         PropTypes.shape({key: PropTypes.number}).isRequired,
         null,
@@ -738,12 +771,12 @@ describe('ReactPropTypes', function() {
 
     it('should have been called with the right params', function() {
       var spy = jasmine.createSpy();
-      var Component = React.createClass({
+      Component = React.createClass({
         propTypes: {num: spy},
 
         render: function() {
           return <div />;
-        }
+        },
       });
 
       var instance = <Component num={5} />;
@@ -756,12 +789,12 @@ describe('ReactPropTypes', function() {
 
     it('should have been called even if the prop is not present', function() {
       var spy = jasmine.createSpy();
-      var Component = React.createClass({
+      Component = React.createClass({
         propTypes: {num: spy},
 
         render: function() {
           return <div />;
-        }
+        },
       });
 
       var instance = <Component bla={5} />;
@@ -778,19 +811,20 @@ describe('ReactPropTypes', function() {
           }
         }
       );
-      var Component = React.createClass({
+      Component = React.createClass({
         propTypes: {num: spy},
 
         render: function() {
           return <div />;
-        }
+        },
       });
 
       var instance = <Component num={6} />;
       instance = ReactTestUtils.renderIntoDocument(instance);
       expect(console.error.argsForCall.length).toBe(1);
       expect(console.error.argsForCall[0][0]).toBe(
-      'Warning: Failed propType: num must be 5!');
+        'Warning: Failed propType: num must be 5!'
+      );
     });
 
     it('should not warn if the validator returned null',
@@ -800,12 +834,12 @@ describe('ReactPropTypes', function() {
             return null;
           }
         );
-        var Component = React.createClass({
+        Component = React.createClass({
           propTypes: {num: spy},
 
           render: function() {
             return <div />;
-          }
+          },
         });
 
         var instance = <Component num={5} />;

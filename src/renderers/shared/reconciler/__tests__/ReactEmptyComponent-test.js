@@ -42,7 +42,7 @@ describe('ReactEmptyComponent', function() {
       render: function() {
         var Component = this.state.component;
         return Component ? <Component /> : null;
-      }
+      },
     });
   });
 
@@ -50,12 +50,12 @@ describe('ReactEmptyComponent', function() {
     var Component1 = React.createClass({
       render: function() {
         return null;
-      }
+      },
     });
     var Component2 = React.createClass({
       render: function() {
         return false;
-      }
+      },
     });
 
     var instance1 = ReactTestUtils.renderIntoDocument(<Component1 />);
@@ -70,7 +70,7 @@ describe('ReactEmptyComponent', function() {
 
   it('should still throw when rendering to undefined', () => {
     var Component = React.createClass({
-      render: function() {}
+      render: function() {},
     });
     expect(function() {
       ReactTestUtils.renderIntoDocument(<Component />);
@@ -144,13 +144,13 @@ describe('ReactEmptyComponent', function() {
       var GrandChild = React.createClass({
         render: function() {
           return null;
-        }
+        },
       });
 
       var Child = React.createClass({
         render: function() {
           return <GrandChild />;
-        }
+        },
       });
 
       var instance1 =
@@ -196,12 +196,12 @@ describe('ReactEmptyComponent', function() {
         // replaced yet!
         expect(React.findDOMNode(this)).not.toBe(null);
         assertions++;
-      }
+      },
     });
     var Wrapper = React.createClass({
       render: function() {
         return this.props.showInner ? <Inner /> : null;
-      }
+      },
     });
 
     var el = document.createElement('div');
@@ -235,7 +235,9 @@ describe('ReactEmptyComponent', function() {
   it('does not break when updating during mount', function() {
     var Child = React.createClass({
       componentDidMount() {
-        this.props.onMount && this.props.onMount();
+        if (this.props.onMount) {
+          this.props.onMount();
+        }
       },
       render() {
         if (!this.props.visible) {
@@ -243,7 +245,7 @@ describe('ReactEmptyComponent', function() {
         }
 
         return <div>hello world</div>;
-      }
+      },
     });
 
     var Parent = React.createClass({
@@ -258,11 +260,11 @@ describe('ReactEmptyComponent', function() {
             <Child key="2" visible={false} />
           </div>
         );
-      }
+      },
     });
 
     expect(function() {
-      ReactTestUtils.renderIntoDocument(<Parent/>)
+      ReactTestUtils.renderIntoDocument(<Parent />);
     }).not.toThrow();
   });
 });

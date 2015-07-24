@@ -6,8 +6,8 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
-* @providesModule ReactFragment
-*/
+ * @providesModule ReactFragment
+ */
 
 'use strict';
 
@@ -77,7 +77,7 @@ if (__DEV__) {
         );
         this[didWarnKey] = true;
         this[fragmentKey][key] = value;
-      }
+      },
     });
   };
 
@@ -104,7 +104,7 @@ var ReactFragment = {
       if (typeof object !== 'object' || !object || Array.isArray(object)) {
         warning(
           false,
-          'React.addons.createFragment only accepts a single object.',
+          'React.addons.createFragment only accepts a single object. Got: %s',
           object
         );
         return object;
@@ -121,12 +121,12 @@ var ReactFragment = {
         var proxy = {};
         Object.defineProperty(proxy, fragmentKey, {
           enumerable: false,
-          value: object
+          value: object,
         });
         Object.defineProperty(proxy, didWarnKey, {
           writable: true,
           enumerable: false,
-          value: false
+          value: false,
         });
         for (var key in object) {
           proxyPropertyAccessWithWarning(proxy, key);
@@ -180,7 +180,7 @@ var ReactFragment = {
       }
     }
     return fragment;
-  }
+  },
 };
 
 module.exports = ReactFragment;

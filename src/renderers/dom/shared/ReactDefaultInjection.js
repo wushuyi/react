@@ -19,51 +19,21 @@ var EnterLeaveEventPlugin = require('EnterLeaveEventPlugin');
 var ExecutionEnvironment = require('ExecutionEnvironment');
 var HTMLDOMPropertyConfig = require('HTMLDOMPropertyConfig');
 var ReactBrowserComponentMixin = require('ReactBrowserComponentMixin');
-var ReactClass = require('ReactClass');
 var ReactComponentBrowserEnvironment =
   require('ReactComponentBrowserEnvironment');
 var ReactDefaultBatchingStrategy = require('ReactDefaultBatchingStrategy');
 var ReactDOMComponent = require('ReactDOMComponent');
-var ReactDOMButton = require('ReactDOMButton');
-var ReactDOMForm = require('ReactDOMForm');
-var ReactDOMImg = require('ReactDOMImg');
 var ReactDOMIDOperations = require('ReactDOMIDOperations');
-var ReactDOMIframe = require('ReactDOMIframe');
-var ReactDOMInput = require('ReactDOMInput');
-var ReactDOMOption = require('ReactDOMOption');
-var ReactDOMSelect = require('ReactDOMSelect');
-var ReactDOMTextarea = require('ReactDOMTextarea');
 var ReactDOMTextComponent = require('ReactDOMTextComponent');
-var ReactElement = require('ReactElement');
 var ReactEventListener = require('ReactEventListener');
 var ReactInjection = require('ReactInjection');
 var ReactInstanceHandles = require('ReactInstanceHandles');
-var ReactInstanceMap = require('ReactInstanceMap');
 var ReactMount = require('ReactMount');
 var ReactReconcileTransaction = require('ReactReconcileTransaction');
 var SelectEventPlugin = require('SelectEventPlugin');
 var ServerReactRootIndex = require('ServerReactRootIndex');
 var SimpleEventPlugin = require('SimpleEventPlugin');
 var SVGDOMPropertyConfig = require('SVGDOMPropertyConfig');
-
-var createFullPageComponent = require('createFullPageComponent');
-
-function autoGenerateWrapperClass(type) {
-  return ReactClass.createClass({
-    tagName: type.toUpperCase(),
-    render: function() {
-      // Copy owner down for debugging info
-      var internalInstance = ReactInstanceMap.get(this);
-      return new ReactElement(
-        type,
-        null,  // key
-        null,  // ref
-        internalInstance._currentElement._owner,  // owner
-        this.props
-      );
-    }
-  });
-}
 
 var alreadyInjected = false;
 
@@ -96,7 +66,7 @@ function inject() {
     EnterLeaveEventPlugin: EnterLeaveEventPlugin,
     ChangeEventPlugin: ChangeEventPlugin,
     SelectEventPlugin: SelectEventPlugin,
-    BeforeInputEventPlugin: BeforeInputEventPlugin
+    BeforeInputEventPlugin: BeforeInputEventPlugin,
   });
 
   ReactInjection.NativeComponent.injectGenericComponentClass(
@@ -107,28 +77,7 @@ function inject() {
     ReactDOMTextComponent
   );
 
-  ReactInjection.NativeComponent.injectAutoWrapper(
-    autoGenerateWrapperClass
-  );
-
-  // This needs to happen before createFullPageComponent() otherwise the mixin
-  // won't be included.
   ReactInjection.Class.injectMixin(ReactBrowserComponentMixin);
-
-  ReactInjection.NativeComponent.injectComponentClasses({
-    'button': ReactDOMButton,
-    'form': ReactDOMForm,
-    'iframe': ReactDOMIframe,
-    'img': ReactDOMImg,
-    'input': ReactDOMInput,
-    'option': ReactDOMOption,
-    'select': ReactDOMSelect,
-    'textarea': ReactDOMTextarea,
-
-    'html': createFullPageComponent('html'),
-    'head': createFullPageComponent('head'),
-    'body': createFullPageComponent('body')
-  });
 
   ReactInjection.DOMProperty.injectDOMPropertyConfig(HTMLDOMPropertyConfig);
   ReactInjection.DOMProperty.injectDOMPropertyConfig(SVGDOMPropertyConfig);
@@ -161,5 +110,5 @@ function inject() {
 }
 
 module.exports = {
-  inject: inject
+  inject: inject,
 };

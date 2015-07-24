@@ -14,9 +14,6 @@
 var mocks = require('mocks');
 
 var React;
-var ReactInstanceMap;
-var ReactTestUtils;
-var reactComponentExpect;
 
 var TestComponent;
 
@@ -24,9 +21,6 @@ describe('ReactCompositeComponent-state', function() {
 
   beforeEach(function() {
     React = require('React');
-    ReactInstanceMap = require('ReactInstanceMap');
-    ReactTestUtils = require('ReactTestUtils');
-    reactComponentExpect = require('reactComponentExpect');
 
     TestComponent = React.createClass({
       peekAtState: function(from, state) {
@@ -127,7 +121,7 @@ describe('ReactCompositeComponent-state', function() {
 
       componentWillUnmount: function() {
         this.peekAtState('componentWillUnmount');
-      }
+      },
     });
 
   });
@@ -144,8 +138,9 @@ describe('ReactCompositeComponent-state', function() {
         this.peekAtState('initial-callback');
       }
     );
-    instance.setProps(
-      {nextColor: 'green'},
+    React.render(
+      <TestComponent stateListener={stateListener} nextColor="green" />,
+      container,
       instance.peekAtCallback('setProps')
     );
     instance.setFavoriteColor('blue');
@@ -153,7 +148,7 @@ describe('ReactCompositeComponent-state', function() {
 
     React.unmountComponentAtNode(container);
 
-    expect(stateListener.mock.calls).toEqual([
+    expect(stateListener.mock.calls.join('\n')).toEqual([
       // there is no state when getInitialState() is called
       ['getInitialState', null],
       ['componentWillMount-start', 'red'],
@@ -179,6 +174,8 @@ describe('ReactCompositeComponent-state', function() {
       ['render', 'yellow'],
       ['componentDidUpdate-currentState', 'yellow'],
       ['componentDidUpdate-prevState', 'orange'],
+      ['setState-sunrise', 'yellow'],
+      ['setState-orange', 'yellow'],
       ['setState-yellow', 'yellow'],
       ['initial-callback', 'yellow'],
       ['componentWillReceiveProps-start', 'yellow'],
@@ -215,8 +212,8 @@ describe('ReactCompositeComponent-state', function() {
       ['forceUpdate', 'blue'],
       // unmountComponent()
       // state is available within `componentWillUnmount()`
-      ['componentWillUnmount', 'blue']
-    ]);
+      ['componentWillUnmount', 'blue'],
+    ].join('\n'));
   });
 
   it('should batch unmounts', function() {
@@ -229,7 +226,7 @@ describe('ReactCompositeComponent-state', function() {
         // This should get silently ignored (maybe with a warning), but it
         // shouldn't break React.
         outer.setState({showInner: false});
-      }
+      },
     });
     var Outer = React.createClass({
       getInitialState: function() {
@@ -237,7 +234,7 @@ describe('ReactCompositeComponent-state', function() {
       },
       render: function() {
         return <div>{this.state.showInner && <Inner />}</div>;
-      }
+      },
     });
 
     var container = document.createElement('div');

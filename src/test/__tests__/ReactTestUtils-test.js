@@ -15,7 +15,6 @@ var React;
 var ReactTestUtils;
 
 var mocks;
-var warn;
 
 describe('ReactTestUtils', function() {
 
@@ -24,13 +23,6 @@ describe('ReactTestUtils', function() {
 
     React = require('React');
     ReactTestUtils = require('ReactTestUtils');
-
-    warn = console.error;
-    console.error = mocks.getMockFunction();
-  });
-
-  afterEach(function() {
-    console.error = warn;
   });
 
   it('should have shallow rendering', function() {
@@ -42,7 +34,7 @@ describe('ReactTestUtils', function() {
             <span className="child2" />
           </div>
         );
-      }
+      },
     });
 
     var shallowRenderer = ReactTestUtils.createRenderer();
@@ -53,7 +45,7 @@ describe('ReactTestUtils', function() {
     expect(result.type).toBe('div');
     expect(result.props.children).toEqual([
       <span className="child1" />,
-      <span className="child2" />
+      <span className="child2" />,
     ]);
   });
 
@@ -64,7 +56,7 @@ describe('ReactTestUtils', function() {
       render: function() {
         return <div />;
       },
-      componentWillUnmount
+      componentWillUnmount,
     });
 
     var shallowRenderer = ReactTestUtils.createRenderer();
@@ -78,7 +70,7 @@ describe('ReactTestUtils', function() {
     var SomeComponent = React.createClass({
       render: function() {
         return null;
-      }
+      },
     });
 
     var shallowRenderer = ReactTestUtils.createRenderer();
@@ -119,7 +111,7 @@ describe('ReactTestUtils', function() {
             </div>
           );
         }
-      }
+      },
     });
 
     var shallowRenderer = ReactTestUtils.createRenderer();
@@ -128,7 +120,7 @@ describe('ReactTestUtils', function() {
     expect(result.type).toBe('div');
     expect(result.props.children).toEqual([
       <span className="child1" />,
-      <span className="child2" />
+      <span className="child2" />,
     ]);
 
     shallowRenderer.render(<SomeComponent aNew="prop" />);
@@ -171,43 +163,69 @@ describe('ReactTestUtils', function() {
 
     var shallowRenderer = ReactTestUtils.createRenderer();
     shallowRenderer.render(<SimpleComponent />, {
-        name: "foo",
+        name: 'foo',
     });
     var result = shallowRenderer.getRenderOutput();
     expect(result).toEqual(<div>foo</div>);
   });
 
-  it('Test scryRenderedDOMComponentsWithClass with TextComponent', function() {
-    var renderedComponent = ReactTestUtils.renderIntoDocument(<div>Hello <span>Jim</span></div>);
+  it('can scryRenderedDOMComponentsWithClass with TextComponent', function() {
+    var Wrapper = React.createClass({
+      render: function() {
+        return <div>Hello <span>Jim</span></div>;
+      },
+    });
+    var renderedComponent = ReactTestUtils.renderIntoDocument(<Wrapper />);
     var scryResults = ReactTestUtils.scryRenderedDOMComponentsWithClass(
       renderedComponent,
-      'NonExistantClass'
+      'NonExistentClass'
     );
     expect(scryResults.length).toBe(0);
 
   });
 
-  it('traverses children in the correct order', function() {
-    var container = document.createElement('div');
+  it('can scryRenderedDOMComponentsWithClass with className contains \\n', function() {
+    var Wrapper = React.createClass({
+      render: function() {
+        return <div>Hello <span className={'x\ny'}>Jim</span></div>;
+      },
+    });
+    var renderedComponent = ReactTestUtils.renderIntoDocument(<Wrapper />);
+    var scryResults = ReactTestUtils.scryRenderedDOMComponentsWithClass(
+      renderedComponent,
+      'x'
+    );
+    expect(scryResults.length).toBe(1);
+  });
 
+  it('traverses children in the correct order', function() {
+    var Wrapper = React.createClass({
+      render: function() {
+        return <div>{this.props.children}</div>;
+      },
+    });
+
+    var container = document.createElement('div');
     React.render(
-      <div>
+      <Wrapper>
         {null}
         <div>purple</div>
-      </div>,
+      </Wrapper>,
       container
     );
     var tree = React.render(
-      <div>
+      <Wrapper>
         <div>orange</div>
         <div>purple</div>
-      </div>,
+      </Wrapper>,
       container
     );
 
     var log = [];
     ReactTestUtils.findAllInRenderedTree(tree, function(child) {
-      log.push(React.findDOMNode(child).textContent);
+      if (ReactTestUtils.isDOMComponent(child)) {
+        log.push(React.findDOMNode(child).textContent);
+      }
     });
 
     // Should be document order, not mount order (which would be purple, orange)
@@ -218,7 +236,7 @@ describe('ReactTestUtils', function() {
     var Foo = React.createClass({
       render: function() {
         return <div />;
-      }
+      },
     });
 
     class Bar extends React.Component {
@@ -252,15 +270,15 @@ describe('ReactTestUtils', function() {
       'input',
       'option',
       'select',
-      'textarea'
+      'textarea',
     ];
 
     injectedDOMComponents.forEach(function(type) {
-      var component = ReactTestUtils.renderIntoDocument(
+      var testComponent = ReactTestUtils.renderIntoDocument(
         React.createElement(type)
       );
-      expect(component.tagName).toBe(type.toUpperCase());
-      expect(ReactTestUtils.isDOMComponent(component)).toBe(true);
+      expect(testComponent.tagName).toBe(type.toUpperCase());
+      expect(ReactTestUtils.isDOMComponent(testComponent)).toBe(true);
     });
 
     // Full-page components (html, head, body) can't be rendered into a div
@@ -277,7 +295,7 @@ describe('ReactTestUtils', function() {
             </body>
           </html>
         );
-      }
+      },
     });
 
     var markup = React.renderToString(<Root />);

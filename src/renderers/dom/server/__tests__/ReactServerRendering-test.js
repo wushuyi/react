@@ -14,7 +14,6 @@
 require('mock-modules')
   .dontMock('ExecutionEnvironment')
   .dontMock('React')
-  .dontMock('ReactMount')
   .dontMock('ReactServerRendering')
   .dontMock('ReactTestUtils')
   .dontMock('ReactMarkupChecksum');
@@ -24,7 +23,6 @@ var mocks = require('mocks');
 var ExecutionEnvironment;
 var React;
 var ReactMarkupChecksum;
-var ReactMount;
 var ReactReconcileTransaction;
 var ReactTestUtils;
 var ReactServerRendering;
@@ -36,7 +34,6 @@ describe('ReactServerRendering', function() {
     require('mock-modules').dumpCache();
     React = require('React');
     ReactMarkupChecksum = require('ReactMarkupChecksum');
-    ReactMount = require('ReactMount');
     ReactTestUtils = require('ReactTestUtils');
     ReactReconcileTransaction = require('ReactReconcileTransaction');
 
@@ -60,6 +57,26 @@ describe('ReactServerRendering', function() {
       );
     });
 
+    it('should generate simple markup for self-closing tags', function() {
+      var response = ReactServerRendering.renderToString(
+        <img />
+      );
+      expect(response).toMatch(
+        '<img ' + ID_ATTRIBUTE_NAME + '="[^"]+" ' +
+          ReactMarkupChecksum.CHECKSUM_ATTR_NAME + '="[^"]+"/>'
+      );
+    });
+
+    it('should generate simple markup for attribute with `>` symbol', function() {
+      var response = ReactServerRendering.renderToString(
+        <img data-attr=">" />
+      );
+      expect(response).toMatch(
+        '<img data-attr="&gt;" ' + ID_ATTRIBUTE_NAME + '="[^"]+" ' +
+          ReactMarkupChecksum.CHECKSUM_ATTR_NAME + '="[^"]+"/>'
+      );
+    });
+
     it('should not register event listeners', function() {
       var EventPluginHub = require('EventPluginHub');
       var cb = mocks.getMockFunction();
@@ -74,12 +91,12 @@ describe('ReactServerRendering', function() {
       var Parent = React.createClass({
         render: function() {
           return <div><Child name="child" /></div>;
-        }
+        },
       });
       var Child = React.createClass({
         render: function() {
           return <span>My name is {this.props.name}</span>;
-        }
+        },
       });
       var response = ReactServerRendering.renderToString(
         <Parent />
@@ -127,7 +144,7 @@ describe('ReactServerRendering', function() {
           },
           componentWillUnmount: function() {
             lifecycle.push('componentWillUnmount');
-          }
+          },
         });
 
         var response = ReactServerRendering.renderToString(
@@ -171,7 +188,7 @@ describe('ReactServerRendering', function() {
           return (
             <span ref="span" onClick={this.click}>Name: {this.props.name}</span>
           );
-        }
+        },
       });
 
       var element = document.createElement('div');
@@ -245,13 +262,13 @@ describe('ReactServerRendering', function() {
       var NestedComponent = React.createClass({
         render: function() {
           return <div>inner text</div>;
-        }
+        },
       });
 
       var TestComponent = React.createClass({
         render: function() {
           return <span><NestedComponent /></span>;
-        }
+        },
       });
 
       var response = ReactServerRendering.renderToStaticMarkup(
@@ -265,7 +282,7 @@ describe('ReactServerRendering', function() {
       var TestComponent = React.createClass({
         render: function() {
           return <span>{'hello'} {'world'}</span>;
-        }
+        },
       });
 
       var response = ReactServerRendering.renderToStaticMarkup(
@@ -317,7 +334,7 @@ describe('ReactServerRendering', function() {
           },
           componentWillUnmount: function() {
             lifecycle.push('componentWillUnmount');
-          }
+          },
         });
 
         var response = ReactServerRendering.renderToStaticMarkup(
@@ -356,7 +373,7 @@ describe('ReactServerRendering', function() {
         },
         render: function() {
           return <div>{this.state.text}</div>;
-        }
+        },
       });
 
       ReactReconcileTransaction.prototype.perform = function() {

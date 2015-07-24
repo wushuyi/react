@@ -11,18 +11,19 @@
 
 'use strict';
 
-/*jshint evil:true */
 
 var emptyFunction = require('emptyFunction');
 var mocks = require('mocks');
 
 describe('ReactDOMInput', function() {
+  var EventConstants;
   var React;
   var ReactLink;
   var ReactTestUtils;
 
   beforeEach(function() {
     require('mock-modules').dumpCache();
+    EventConstants = require('EventConstants');
     React = require('React');
     ReactLink = require('ReactLink');
     ReactTestUtils = require('ReactTestUtils');
@@ -56,8 +57,8 @@ describe('ReactDOMInput', function() {
   it('should display "foobar" for `defaultValue` of `objToString`', function() {
     var objToString = {
       toString: function() {
-        return "foobar";
-      }
+        return 'foobar';
+      },
     };
 
     var stub = <input type="text" defaultValue={objToString} />;
@@ -76,41 +77,52 @@ describe('ReactDOMInput', function() {
   });
 
   it('should allow setting `value` to `true`', function() {
+    var container = document.createElement('div');
     var stub = <input type="text" value="yolo" onChange={emptyFunction} />;
-    stub = ReactTestUtils.renderIntoDocument(stub);
+    stub = React.render(stub, container);
     var node = React.findDOMNode(stub);
 
     expect(node.value).toBe('yolo');
 
-    stub.replaceProps({value: true, onChange: emptyFunction});
+    stub = React.render(
+      <input type="text" value={true} onChange={emptyFunction} />,
+      container
+    );
     expect(node.value).toEqual('true');
   });
 
-  it("should allow setting `value` to `false`", function() {
+  it('should allow setting `value` to `false`', function() {
+    var container = document.createElement('div');
     var stub = <input type="text" value="yolo" onChange={emptyFunction} />;
-    stub = ReactTestUtils.renderIntoDocument(stub);
+    stub = React.render(stub, container);
     var node = React.findDOMNode(stub);
 
     expect(node.value).toBe('yolo');
 
-    stub.replaceProps({value: false});
+    stub = React.render(
+      <input type="text" value={false} onChange={emptyFunction} />,
+      container
+    );
     expect(node.value).toEqual('false');
   });
 
   it('should allow setting `value` to `objToString`', function() {
+    var container = document.createElement('div');
     var stub = <input type="text" value="foo" onChange={emptyFunction} />;
-    stub = ReactTestUtils.renderIntoDocument(stub);
+    stub = React.render(stub, container);
     var node = React.findDOMNode(stub);
 
     expect(node.value).toBe('foo');
 
     var objToString = {
       toString: function() {
-        return "foobar";
-      }
+        return 'foobar';
+      },
     };
-
-    stub.replaceProps({value: objToString, onChange: emptyFunction});
+    stub = React.render(
+      <input type="text" value={objToString} onChange={emptyFunction} />,
+      container
+    );
     expect(node.value).toEqual('foobar');
   });
 
@@ -122,6 +134,30 @@ describe('ReactDOMInput', function() {
     node.value = 'giraffe';
     ReactTestUtils.Simulate.change(node);
     expect(node.value).toBe('0');
+  });
+
+  it('should have the correct target value', function() {
+    var handled = false;
+    var handler = function(event) {
+      expect(event.target.nodeName).toBe('INPUT');
+      handled = true;
+    };
+    var stub = <input type="text" value={0} onChange={handler} />;
+    var container = document.createElement('div');
+    var node = React.render(stub, container);
+
+    node.value = 'giraffe';
+
+    var fakeNativeEvent = new function() {};
+    fakeNativeEvent.target = node;
+    fakeNativeEvent.path = [node, container];
+    ReactTestUtils.simulateNativeEventOnNode(
+      EventConstants.topLevelTypes.topInput,
+      node,
+      fakeNativeEvent
+    );
+
+    expect(handled).toBe(true);
   });
 
   it('should not set a value for submit buttons unnecessarily', function() {
@@ -168,7 +204,7 @@ describe('ReactDOMInput', function() {
             </form>
           </div>
         );
-      }
+      },
     });
 
     var stub = ReactTestUtils.renderIntoDocument(<RadioGroup />);

@@ -34,7 +34,7 @@ var startCoords = {x: null, y: null};
 
 var Axis = {
   x: {page: 'pageX', client: 'clientX', envScroll: 'currentPageScrollLeft'},
-  y: {page: 'pageY', client: 'clientY', envScroll: 'currentPageScrollTop'}
+  y: {page: 'pageY', client: 'clientY', envScroll: 'currentPageScrollTop'},
 };
 
 function getAxisCoordOfEvent(axis, nativeEvent) {
@@ -60,23 +60,23 @@ var touchEvents = [
   topLevelTypes.topTouchStart,
   topLevelTypes.topTouchCancel,
   topLevelTypes.topTouchEnd,
-  topLevelTypes.topTouchMove
+  topLevelTypes.topTouchMove,
 ];
 
 var dependencies = [
   topLevelTypes.topMouseDown,
   topLevelTypes.topMouseMove,
-  topLevelTypes.topMouseUp
+  topLevelTypes.topMouseUp,
 ].concat(touchEvents);
 
 var eventTypes = {
   touchTap: {
     phasedRegistrationNames: {
       bubbled: keyOf({onTouchTap: null}),
-      captured: keyOf({onTouchTapCapture: null})
+      captured: keyOf({onTouchTapCapture: null}),
     },
-    dependencies: dependencies
-  }
+    dependencies: dependencies,
+  },
 };
 
 var usedTouch = false;
@@ -101,7 +101,8 @@ var TapEventPlugin = {
       topLevelType,
       topLevelTarget,
       topLevelTargetID,
-      nativeEvent) {
+      nativeEvent,
+      nativeEventTarget) {
     if (!isStartish(topLevelType) && !isEndish(topLevelType)) {
       return null;
     }
@@ -122,7 +123,8 @@ var TapEventPlugin = {
       event = SyntheticUIEvent.getPooled(
         eventTypes.touchTap,
         topLevelTargetID,
-        nativeEvent
+        nativeEvent,
+        nativeEventTarget
       );
     }
     if (isStartish(topLevelType)) {
@@ -134,7 +136,7 @@ var TapEventPlugin = {
     }
     EventPropagators.accumulateTwoPhaseDispatches(event);
     return event;
-  }
+  },
 
 };
 

@@ -1,6 +1,7 @@
 ---
 id: getting-started-ja-JP
 title: 始めてみましょう
+permalink: getting-started-ja-JP.html
 next: tutorial-ja-JP.html
 redirect_from: "docs/index-ja-JP.html"
 ---
@@ -23,10 +24,13 @@ React でのハッキングを始めるにあたり、一番簡単なものと�
 </div>
 
 スターターキットのルートディレクトリに `helloworld.html` を作り、次のように書いてみましょう。
+
 ```html
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8" />
+    <title>Hello React!</title>
     <script src="build/react.js"></script>
     <script src="build/JSXTransformer.js"></script>
   </head>
@@ -88,10 +92,11 @@ React.render(
 
 最後に HTML ファイルを以下のように書き換えましょう。
 
-```html{6,10}
+```html{7,11}
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8" />
     <title>Hello React!</title>
     <script src="build/react.js"></script>
     <!-- JSXTransformer は必要ありません！ -->
@@ -109,7 +114,7 @@ React を [browserify](http://browserify.org/) や [webpack](https://webpack.git
 
 ## 次にすること
 
-[チュートリアル](/react/docs/tutorial.html) や、スターターキットの `examples` ディレクトリに入っている他の例を読んでみてください。
+[チュートリアル](/react/docs/tutorial-ja-JP.html) や、スターターキットの `examples` ディレクトリに入っている他の例を読んでみてください。
 
 また、[ワークフロー、UIコンポーネント、ルーティング、データマネジメントなど](https://github.com/facebook/react/wiki/Complementary-Tools)の方面で貢献しているコミュニティの wiki もあります。
 

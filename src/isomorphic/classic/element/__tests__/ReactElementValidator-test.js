@@ -28,7 +28,9 @@ describe('ReactElementValidator', function() {
     ReactFragment = require('ReactFragment');
     ReactTestUtils = require('ReactTestUtils');
     ComponentClass = React.createClass({
-      render: function() { return React.createElement('div'); }
+      render: function() {
+        return React.createElement('div');
+      },
     });
   });
 
@@ -56,7 +58,7 @@ describe('ReactElementValidator', function() {
       displayName: 'InnerClass',
       render: function() {
         return Component(null, this.props.childSet);
-      }
+      },
     });
 
     var InnerComponent = React.createFactory(InnerClass);
@@ -65,7 +67,7 @@ describe('ReactElementValidator', function() {
       displayName: 'ComponentWrapper',
       render: function() {
         return InnerComponent({childSet: [Component(), Component()] });
-      }
+      },
     });
 
     ReactTestUtils.renderIntoDocument(
@@ -87,12 +89,12 @@ describe('ReactElementValidator', function() {
       displayName: undefined,
       render: function() {
         return <div />;
-      }
+      },
     });
 
     var divs = [
       <div />,
-      <div />
+      <div />,
     ];
     ReactTestUtils.renderIntoDocument(<Anonymous>{divs}</Anonymous>);
 
@@ -108,7 +110,7 @@ describe('ReactElementValidator', function() {
 
     var divs = [
       <div />,
-      <div />
+      <div />,
     ];
     ReactTestUtils.renderIntoDocument(<div>{divs}</div>);
 
@@ -131,7 +133,7 @@ describe('ReactElementValidator', function() {
             <footer />
           </div>
         );
-      }
+      },
     });
 
     ReactTestUtils.renderIntoDocument(
@@ -155,9 +157,9 @@ describe('ReactElementValidator', function() {
           next: function() {
             var done = ++i > 2;
             return {value: done ? undefined : Component(), done: done};
-          }
+          },
         };
-      }
+      },
     };
 
     Component(null, iterable);
@@ -189,11 +191,11 @@ describe('ReactElementValidator', function() {
             var done = ++i > 2;
             return {
               value: done ? undefined : Component({key: '#' + i}),
-              done: done
+              done: done,
             };
-          }
+          },
         };
-      }
+      },
     };
 
     Component(null, iterable);
@@ -213,7 +215,8 @@ describe('ReactElementValidator', function() {
     );
   });
 
-  it('does not warn for numeric keys in entry iterables in rest args', function() {
+  it('does not warn for numeric keys in entry iterables in rest args',
+      function() {
     spyOn(console, 'error');
     var Component = React.createFactory(ComponentClass);
 
@@ -224,9 +227,9 @@ describe('ReactElementValidator', function() {
           next: function() {
             var done = ++i > 2;
             return {value: done ? undefined : [i, Component()], done: done};
-          }
+          },
         };
-      }
+      },
     };
     iterable.entries = iterable['@@iterator'];
 
@@ -263,16 +266,16 @@ describe('ReactElementValidator', function() {
     spyOn(console, 'error');
     var MyComp = React.createClass({
       propTypes: {
-        color: React.PropTypes.string
+        color: React.PropTypes.string,
       },
       render: function() {
         return React.createElement('div', null, 'My color is ' + this.color);
-      }
+      },
     });
     var ParentComp = React.createClass({
       render: function() {
         return React.createElement(MyComp, {color: 123});
-      }
+      },
     });
     ReactTestUtils.renderIntoDocument(React.createElement(ParentComp));
     expect(console.error.calls[0].args[0]).toBe(
@@ -283,7 +286,7 @@ describe('ReactElementValidator', function() {
   });
 
   it('gives a helpful error when passing null, undefined, boolean, or number',
-      () => {
+      function() {
     spyOn(console, 'error');
     React.createElement(undefined);
     React.createElement(null);
@@ -315,25 +318,26 @@ describe('ReactElementValidator', function() {
   });
 
   it('includes the owner name when passing null, undefined, boolean, or number',
-      () => {
+      function() {
     spyOn(console, 'error');
     var ParentComp = React.createClass({
       render: function() {
         return React.createElement(null);
-      }
+      },
     });
     expect(function() {
       ReactTestUtils.renderIntoDocument(React.createElement(ParentComp));
-    }).toThrow();
-    expect(console.error.calls.length).toBe(2);
+    }).toThrow(
+      'Invariant Violation: Element type is invalid: expected a string (for ' +
+      'built-in components) or a class/function (for composite components) ' +
+      'but got: null. Check the render method of `ParentComp`.'
+    );
+    expect(console.error.calls.length).toBe(1);
     expect(console.error.calls[0].args[0]).toBe(
       'Warning: React.createElement: type should not be null, undefined, ' +
       'boolean, or number. It should be a string (for DOM elements) or a ' +
       'ReactClass (for composite components). Check the render method of ' +
       '`ParentComp`.'
-    );
-    expect(console.error.calls[1].args[0]).toBe(
-      'Warning: Only functions or strings can be mounted as React components.'
     );
   });
 
@@ -347,7 +351,7 @@ describe('ReactElementValidator', function() {
       },
       render: function() {
         return React.createElement('span', null, this.props.prop);
-      }
+      },
     });
 
     ReactTestUtils.renderIntoDocument(React.createElement(Component));
@@ -369,7 +373,7 @@ describe('ReactElementValidator', function() {
       },
       render: function() {
         return React.createElement('span', null, this.props.prop);
-      }
+      },
     });
 
     ReactTestUtils.renderIntoDocument(
@@ -388,11 +392,11 @@ describe('ReactElementValidator', function() {
 
     var Component = React.createClass({
       propTypes: {
-        prop: React.PropTypes.string.isRequired
+        prop: React.PropTypes.string.isRequired,
       },
       render: function() {
         return React.createElement('span', null, this.props.prop);
-      }
+      },
     });
 
     ReactTestUtils.renderIntoDocument(
@@ -427,11 +431,11 @@ describe('ReactElementValidator', function() {
 
     var Component = React.createClass({
       propTypes: {
-        myProp: React.PropTypes.shape
+        myProp: React.PropTypes.shape,
       },
       render: function() {
         return React.createElement('span', null, this.props.myProp.value);
-      }
+      },
     });
 
     ReactTestUtils.renderIntoDocument(
@@ -461,7 +465,7 @@ describe('ReactElementValidator', function() {
     var TestComponent = React.createClass({
       render: function() {
         return <div />;
-      }
+      },
     });
     var TestFactory = React.createFactory(TestComponent);
     expect(TestFactory.type).toBe(TestComponent);
@@ -483,7 +487,7 @@ describe('ReactElementValidator', function() {
       },
       componentDidMount: function() {
         React.findDOMNode(this).appendChild(this.props.children);
-      }
+      },
     });
 
     var node = document.createElement('div');

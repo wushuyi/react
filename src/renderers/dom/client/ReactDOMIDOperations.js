@@ -19,10 +19,9 @@ var ReactMount = require('ReactMount');
 var ReactPerf = require('ReactPerf');
 
 var invariant = require('invariant');
-var setInnerHTML = require('setInnerHTML');
 
 /**
- * Errors for properties that should not be updated with `updatePropertyById()`.
+ * Errors for properties that should not be updated with `updatePropertyByID()`.
  *
  * @type {object}
  * @private
@@ -30,7 +29,7 @@ var setInnerHTML = require('setInnerHTML');
 var INVALID_PROPERTY_ERRORS = {
   dangerouslySetInnerHTML:
     '`dangerouslySetInnerHTML` must be set using `updateInnerHTMLByID()`.',
-  style: '`style` must be set using `updateStylesByID()`.'
+  style: '`style` must be set using `updateStylesByID()`.',
 };
 
 /**
@@ -67,6 +66,24 @@ var ReactDOMIDOperations = {
   },
 
   /**
+   * Updates a DOM node with new property values.
+   *
+   * @param {string} id ID of the node to update.
+   * @param {string} name A valid property name.
+   * @param {*} value New value of the property.
+   * @internal
+   */
+  updateAttributeByID: function(id, name, value) {
+    var node = ReactMount.getNode(id);
+    invariant(
+      !INVALID_PROPERTY_ERRORS.hasOwnProperty(name),
+      'updatePropertyByID(...): %s',
+      INVALID_PROPERTY_ERRORS[name]
+    );
+    DOMPropertyOperations.setValueForAttribute(node, name, value);
+  },
+
+  /**
    * Updates a DOM node to remove a property. This should only be used to remove
    * DOM properties in `DOMProperty`.
    *
@@ -95,18 +112,6 @@ var ReactDOMIDOperations = {
   updateStylesByID: function(id, styles) {
     var node = ReactMount.getNode(id);
     CSSPropertyOperations.setValueForStyles(node, styles);
-  },
-
-  /**
-   * Updates a DOM node's innerHTML.
-   *
-   * @param {string} id ID of the node to update.
-   * @param {string} html An HTML string.
-   * @internal
-   */
-  updateInnerHTMLByID: function(id, html) {
-    var node = ReactMount.getNode(id);
-    setInnerHTML(node, html);
   },
 
   /**
@@ -146,17 +151,16 @@ var ReactDOMIDOperations = {
       updates[i].parentNode = ReactMount.getNode(updates[i].parentID);
     }
     DOMChildrenOperations.processUpdates(updates, markup);
-  }
+  },
 };
 
 ReactPerf.measureMethods(ReactDOMIDOperations, 'ReactDOMIDOperations', {
   updatePropertyByID: 'updatePropertyByID',
   deletePropertyByID: 'deletePropertyByID',
   updateStylesByID: 'updateStylesByID',
-  updateInnerHTMLByID: 'updateInnerHTMLByID',
   updateTextContentByID: 'updateTextContentByID',
   dangerouslyReplaceNodeWithMarkupByID: 'dangerouslyReplaceNodeWithMarkupByID',
-  dangerouslyProcessChildrenUpdates: 'dangerouslyProcessChildrenUpdates'
+  dangerouslyProcessChildrenUpdates: 'dangerouslyProcessChildrenUpdates',
 });
 
 module.exports = ReactDOMIDOperations;

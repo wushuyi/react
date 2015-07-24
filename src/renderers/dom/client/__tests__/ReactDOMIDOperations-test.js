@@ -15,11 +15,12 @@ describe('ReactDOMIDOperations', function() {
   var DOMPropertyOperations = require('DOMPropertyOperations');
   var ReactDOMIDOperations = require('ReactDOMIDOperations');
   var ReactMount = require('ReactMount');
+  var ReactMultiChildUpdateTypes = require('ReactMultiChildUpdateTypes');
   var keyOf = require('keyOf');
 
   it('should disallow updating special properties', function() {
-    spyOn(ReactMount, "getNode");
-    spyOn(DOMPropertyOperations, "setValueForProperty");
+    spyOn(ReactMount, 'getNode');
+    spyOn(DOMPropertyOperations, 'setValueForProperty');
 
     expect(function() {
       ReactDOMIDOperations.updatePropertyByID(
@@ -40,13 +41,21 @@ describe('ReactDOMIDOperations', function() {
 
   it('should update innerHTML and preserve whitespace', function() {
     var stubNode = document.createElement('div');
-    spyOn(ReactMount, "getNode").andReturn(stubNode);
+    spyOn(ReactMount, 'getNode').andReturn(stubNode);
 
     var html = '\n  \t  <span>  \n  testContent  \t  </span>  \n  \t';
 
-    ReactDOMIDOperations.updateInnerHTMLByID(
-      'testID',
-      html
+    ReactDOMIDOperations.dangerouslyProcessChildrenUpdates(
+      [{
+        parentID: 'testID',
+        parentNode: null,
+        type: ReactMultiChildUpdateTypes.SET_MARKUP,
+        markupIndex: null,
+        content: html,
+        fromIndex: null,
+        toIndex: null,
+      }],
+      []
     );
 
     expect(

@@ -16,6 +16,10 @@ var React;
 describe('ReactES6Class', function() {
 
   var container;
+  var freeze = function(expectation) {
+    Object.freeze(expectation);
+    return expectation;
+  };
   var Inner;
   var attachedListener = null;
   var renderedName = null;
@@ -51,8 +55,18 @@ describe('ReactES6Class', function() {
   });
 
   it('throws if no render function is defined', function() {
+    spyOn(console, 'error');
     class Foo extends React.Component { }
     expect(() => React.render(<Foo />, container)).toThrow();
+
+    expect(console.error.calls.length).toBe(1);
+    expect(console.error.calls[0].args[0]).toBe(
+      'Warning: Foo(...): ' +
+      'No `render` method found on the returned component instance: you may ' +
+      'have forgotten to define `render` in your component or you may have ' +
+      'accidentally tried to render an element whose type is a function that ' +
+      'isn\'t a React component.'
+    );
   });
 
   it('renders a simple stateless component with prop', function() {
@@ -112,7 +126,7 @@ describe('ReactES6Class', function() {
     }
     Foo.contextTypes = {
       tag: React.PropTypes.string,
-      className: React.PropTypes.string
+      className: React.PropTypes.string,
     };
 
     class Outer extends React.Component {
@@ -125,7 +139,7 @@ describe('ReactES6Class', function() {
     }
     Outer.childContextTypes = {
       tag: React.PropTypes.string,
-      className: React.PropTypes.string
+      className: React.PropTypes.string,
     };
     test(<Outer />, 'SPAN', 'foo');
   });
@@ -283,20 +297,20 @@ describe('ReactES6Class', function() {
     test(<Foo value="foo" />, 'SPAN', 'foo');
     expect(lifeCycles).toEqual([
       'will-mount',
-      'did-mount'
+      'did-mount',
     ]);
     lifeCycles = []; // reset
     test(<Foo value="bar" />, 'SPAN', 'bar');
     expect(lifeCycles).toEqual([
-      'receive-props', {value: 'bar'},
-      'should-update', {value: 'bar'}, {},
-      'will-update', {value: 'bar'}, {},
-      'did-update', {value: 'foo'}, {}
+      'receive-props', freeze({value: 'bar'}),
+      'should-update', freeze({value: 'bar'}), {},
+      'will-update', freeze({value: 'bar'}), {},
+      'did-update', freeze({value: 'foo'}), {},
     ]);
     lifeCycles = []; // reset
     React.unmountComponentAtNode(container);
     expect(lifeCycles).toEqual([
-      'will-unmount'
+      'will-unmount',
     ]);
   });
 
@@ -341,7 +355,7 @@ describe('ReactES6Class', function() {
     );
   });
 
-  it('should warn when mispelling shouldComponentUpdate', function() {
+  it('should warn when misspelling shouldComponentUpdate', function() {
     spyOn(console, 'error');
 
     class NamedComponent {
@@ -360,6 +374,27 @@ describe('ReactES6Class', function() {
       'NamedComponent has a method called componentShouldUpdate(). Did you ' +
       'mean shouldComponentUpdate()? The name is phrased as a question ' +
       'because the function is expected to return a value.'
+    );
+  });
+
+  it('should warn when misspelling componentWillReceiveProps', function() {
+    spyOn(console, 'error');
+
+    class NamedComponent {
+      componentWillRecieveProps() {
+        return false;
+      }
+      render() {
+        return <span className="foo" />;
+      }
+    }
+    test(<NamedComponent />, 'SPAN', 'foo');
+
+    expect(console.error.calls.length).toBe(1);
+    expect(console.error.calls[0].args[0]).toBe(
+      'Warning: ' +
+      'NamedComponent has a method called componentWillRecieveProps(). Did ' +
+      'you mean componentWillReceiveProps()?'
     );
   });
 

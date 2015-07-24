@@ -14,15 +14,23 @@
 
 'use strict';
 
+var AutoFocusUtils = require('AutoFocusUtils');
 var CSSPropertyOperations = require('CSSPropertyOperations');
 var DOMProperty = require('DOMProperty');
 var DOMPropertyOperations = require('DOMPropertyOperations');
+var EventConstants = require('EventConstants');
 var ReactBrowserEventEmitter = require('ReactBrowserEventEmitter');
 var ReactComponentBrowserEnvironment =
   require('ReactComponentBrowserEnvironment');
+var ReactDOMButton = require('ReactDOMButton');
+var ReactDOMInput = require('ReactDOMInput');
+var ReactDOMOption = require('ReactDOMOption');
+var ReactDOMSelect = require('ReactDOMSelect');
+var ReactDOMTextarea = require('ReactDOMTextarea');
 var ReactMount = require('ReactMount');
 var ReactMultiChild = require('ReactMultiChild');
 var ReactPerf = require('ReactPerf');
+var ReactUpdateQueue = require('ReactUpdateQueue');
 
 var assign = require('Object.assign');
 var escapeTextContentForBrowser = require('escapeTextContentForBrowser');
@@ -43,6 +51,122 @@ var CONTENT_TYPES = {'string': true, 'number': true};
 var STYLE = keyOf({style: null});
 
 var ELEMENT_NODE_TYPE = 1;
+
+var canDefineProperty = false;
+try {
+  Object.defineProperty({}, 'test', {get: function() {}});
+  canDefineProperty = true;
+} catch (e) {
+}
+
+function getDeclarationErrorAddendum(internalInstance) {
+  if (internalInstance) {
+    var owner = internalInstance._currentElement._owner || null;
+    if (owner) {
+      var name = owner.getName();
+      if (name) {
+        return ' This DOM node was rendered by `' + name + '`.';
+      }
+    }
+  }
+  return '';
+}
+
+var legacyPropsDescriptor;
+if (__DEV__) {
+  legacyPropsDescriptor = {
+    props: {
+      enumerable: false,
+      get: function() {
+        var component = this._reactInternalComponent;
+        warning(
+          false,
+          'ReactDOMComponent: Do not access .props of a DOM node; instead, ' +
+          'recreate the props as `render` did originally or read the DOM ' +
+          'properties/attributes directly from this node (e.g., ' +
+          'this.refs.box.className).%s',
+          getDeclarationErrorAddendum(component)
+        );
+        return component._currentElement.props;
+      },
+    },
+  };
+}
+
+function legacyGetDOMNode() {
+  if (__DEV__) {
+    var component = this._reactInternalComponent;
+    warning(
+      false,
+      'ReactDOMComponent: Do not access .getDOMNode() of a DOM node; ' +
+      'instead, use the node directly.%s',
+      getDeclarationErrorAddendum(component)
+    );
+  }
+  return this;
+}
+
+function legacyIsMounted() {
+  var component = this._reactInternalComponent;
+  if (__DEV__) {
+    warning(
+      false,
+      'ReactDOMComponent: Do not access .isMounted() of a DOM node.%s',
+      getDeclarationErrorAddendum(component)
+    );
+  }
+  return !!component;
+}
+
+function legacySetStateEtc() {
+  if (__DEV__) {
+    var component = this._reactInternalComponent;
+    warning(
+      false,
+      'ReactDOMComponent: Do not access .setState(), .replaceState(), or ' +
+      '.forceUpdate() of a DOM node. This is a no-op.%s',
+      getDeclarationErrorAddendum(component)
+    );
+  }
+}
+
+function legacySetProps(partialProps, callback) {
+  var component = this._reactInternalComponent;
+  if (__DEV__) {
+    warning(
+      false,
+      'ReactDOMComponent: Do not access .setProps() of a DOM node. ' +
+      'Instead, call React.render again at the top level.%s',
+      getDeclarationErrorAddendum(component)
+    );
+  }
+  if (!component) {
+    return;
+  }
+  ReactUpdateQueue.enqueueSetPropsInternal(component, partialProps);
+  if (callback) {
+    ReactUpdateQueue.enqueueCallbackInternal(component, callback);
+  }
+}
+
+function legacyReplaceProps(partialProps, callback) {
+  var component = this._reactInternalComponent;
+  if (__DEV__) {
+    warning(
+      false,
+      'ReactDOMComponent: Do not access .replaceProps() of a DOM node. ' +
+      'Instead, call React.render again at the top level.%s',
+      getDeclarationErrorAddendum(component)
+    );
+  }
+  if (!component) {
+    return;
+  }
+  ReactUpdateQueue.enqueueReplacePropsInternal(component, partialProps);
+  if (callback) {
+    ReactUpdateQueue.enqueueCallbackInternal(component, callback);
+  }
+}
 
 var styleMutationWarning = {};
 
@@ -88,6 +212,7 @@ function checkAndWarnForMutatedStyle(style1, style2, component) {
 var BackendIDOperations = null;
 
 /**
+ * @param {object} component
  * @param {?object} props
  */
 function assertValidProps(component, props) {
@@ -100,8 +225,12 @@ function assertValidProps(component, props) {
       warning(
         props.children == null && props.dangerouslySetInnerHTML == null,
         '%s is a void element tag and must not have `children` or ' +
-        'use `props.dangerouslySetInnerHTML`.',
-        component._tag
+        'use `props.dangerouslySetInnerHTML`.%s',
+        component._tag,
+        component._currentElement._owner ?
+          ' Check the render method of ' +
+          component._currentElement._owner.getName() + '.' :
+          ''
       );
     }
   }
@@ -159,7 +288,7 @@ function enqueuePutListener(id, registrationName, listener, transaction) {
   transaction.getReactMountReady().enqueue(putListener, {
     id: id,
     registrationName: registrationName,
-    listener: listener
+    listener: listener,
   });
 }
 
@@ -170,6 +299,62 @@ function putListener() {
     listenerToPut.registrationName,
     listenerToPut.listener
   );
+}
+
+function trapBubbledEventsLocal() {
+  var inst = this;
+  // If a component renders to null or if another component fatals and causes
+  // the state of the tree to be corrupted, `node` here can be null.
+  invariant(inst._rootNodeID, 'Must be mounted to trap events');
+  var node = ReactMount.getNode(inst._rootNodeID);
+  invariant(
+    node,
+    'trapBubbledEvent(...): Requires node to be rendered.'
+  );
+
+  switch (inst._tag) {
+    case 'iframe':
+      inst._wrapperState.listeners = [
+        ReactBrowserEventEmitter.trapBubbledEvent(
+          EventConstants.topLevelTypes.topLoad,
+          'load',
+          node
+        ),
+      ];
+      break;
+    case 'img':
+      inst._wrapperState.listeners = [
+        ReactBrowserEventEmitter.trapBubbledEvent(
+          EventConstants.topLevelTypes.topError,
+          'error',
+          node
+        ),
+        ReactBrowserEventEmitter.trapBubbledEvent(
+          EventConstants.topLevelTypes.topLoad,
+          'load',
+          node
+        ),
+      ];
+      break;
+    case 'form':
+      inst._wrapperState.listeners = [
+        ReactBrowserEventEmitter.trapBubbledEvent(
+          EventConstants.topLevelTypes.topReset,
+          'reset',
+          node
+        ),
+        ReactBrowserEventEmitter.trapBubbledEvent(
+          EventConstants.topLevelTypes.topSubmit,
+          'submit',
+          node
+        ),
+      ];
+      break;
+  }
+}
+
+function postUpdateSelectWrapper() {
+  ReactDOMSelect.postUpdateWrapper(this);
 }
 
 // For HTML, certain tags should omit their close tag. We keep a whitelist for
@@ -190,21 +375,21 @@ var omittedCloseTags = {
   'param': true,
   'source': true,
   'track': true,
-  'wbr': true
+  'wbr': true,
   // NOTE: menuitem's close tag should be omitted, but that causes problems.
 };
 
 var newlineEatingTags = {
   'listing': true,
   'pre': true,
-  'textarea': true
+  'textarea': true,
 };
 
 // For HTML, certain tags cannot have children. This has the same purpose as
 // `omittedCloseTags` except that `menuitem` should still have its closing tag.
 
 var voidElementTags = assign({
-  'menuitem': true
+  'menuitem': true,
 }, omittedCloseTags);
 
 // We accept any tag to be rendered but since this gets injected into arbitrary
@@ -233,6 +418,10 @@ function processChildContext(context, inst) {
   return context;
 }
 
+function isCustomComponent(tagName, props) {
+  return tagName.indexOf('-') >= 0 || props.is != null;
+}
+
 /**
  * Creates a new React class that is idempotent and capable of containing other
  * React components. It accepts event listeners and DOM properties that are
@@ -249,11 +438,14 @@ function processChildContext(context, inst) {
  */
 function ReactDOMComponent(tag) {
   validateDangerousTag(tag);
-  this._tag = tag;
+  this._tag = tag.toLowerCase();
   this._renderedChildren = null;
   this._previousStyle = null;
   this._previousStyleCopy = null;
   this._rootNodeID = null;
+  this._wrapperState = null;
+  this._topLevelWrapper = null;
+  this._nodeWithLegacyProperties = null;
 }
 
 ReactDOMComponent.displayName = 'ReactDOMComponent';
@@ -277,7 +469,40 @@ ReactDOMComponent.Mixin = {
   mountComponent: function(rootID, transaction, context) {
     this._rootNodeID = rootID;
 
-    assertValidProps(this, this._currentElement.props);
+    var props = this._currentElement.props;
+
+    switch (this._tag) {
+      case 'iframe':
+      case 'img':
+      case 'form':
+        this._wrapperState = {
+          listeners: null,
+        };
+        transaction.getReactMountReady().enqueue(trapBubbledEventsLocal, this);
+        break;
+      case 'button':
+        props = ReactDOMButton.getNativeProps(this, props, context);
+        break;
+      case 'input':
+        ReactDOMInput.mountWrapper(this, props, context);
+        props = ReactDOMInput.getNativeProps(this, props, context);
+        break;
+      case 'option':
+        ReactDOMOption.mountWrapper(this, props, context);
+        props = ReactDOMOption.getNativeProps(this, props, context);
+        break;
+      case 'select':
+        ReactDOMSelect.mountWrapper(this, props, context);
+        props = ReactDOMSelect.getNativeProps(this, props, context);
+        context = ReactDOMSelect.processChildContext(this, props, context);
+        break;
+      case 'textarea':
+        ReactDOMTextarea.mountWrapper(this, props, context);
+        props = ReactDOMTextarea.getNativeProps(this, props, context);
+        break;
+    }
+
+    assertValidProps(this, props);
     if (__DEV__) {
       if (context[validateDOMNesting.ancestorInfoContextKey]) {
         validateDOMNesting(
@@ -288,12 +513,27 @@ ReactDOMComponent.Mixin = {
       }
     }
 
-    var tagOpen = this._createOpenTagMarkupAndPutListeners(transaction);
-    var tagContent = this._createContentMarkup(transaction, context);
+    var tagOpen = this._createOpenTagMarkupAndPutListeners(transaction, props);
+    var tagContent = this._createContentMarkup(transaction, props, context);
+
+    switch (this._tag) {
+      case 'button':
+      case 'input':
+      case 'select':
+      case 'textarea':
+        if (props.autoFocus) {
+          transaction.getReactMountReady().enqueue(
+            AutoFocusUtils.focusDOMComponent,
+            this
+          );
+        }
+        break;
+    }
+
     if (!tagContent && omittedCloseTags[this._tag]) {
       return tagOpen + '/>';
     }
-    return tagOpen + '>' + tagContent + '</' + this._tag + '>';
+    return tagOpen + '>' + tagContent + '</' + this._currentElement.type + '>';
   },
 
   /**
@@ -306,11 +546,11 @@ ReactDOMComponent.Mixin = {
    *
    * @private
    * @param {ReactReconcileTransaction|ReactServerRenderingTransaction} transaction
+   * @param {object} props
    * @return {string} Markup of opening tag.
    */
-  _createOpenTagMarkupAndPutListeners: function(transaction) {
-    var props = this._currentElement.props;
-    var ret = '<' + this._tag;
+  _createOpenTagMarkupAndPutListeners: function(transaction, props) {
+    var ret = '<' + this._currentElement.type;
 
     for (var propKey in props) {
       if (!props.hasOwnProperty(propKey)) {
@@ -333,8 +573,12 @@ ReactDOMComponent.Mixin = {
           }
           propValue = CSSPropertyOperations.createMarkupForStyles(propValue);
         }
-        var markup =
-          DOMPropertyOperations.createMarkupForProperty(propKey, propValue);
+        var markup = null;
+        if (this._tag != null && isCustomComponent(this._tag, props)) {
+          markup = DOMPropertyOperations.createMarkupForCustomAttribute(propKey, propValue);
+        } else {
+          markup = DOMPropertyOperations.createMarkupForProperty(propKey, propValue);
+        }
         if (markup) {
           ret += ' ' + markup;
         }
@@ -356,12 +600,12 @@ ReactDOMComponent.Mixin = {
    *
    * @private
    * @param {ReactReconcileTransaction|ReactServerRenderingTransaction} transaction
+   * @param {object} props
    * @param {object} context
    * @return {string} Content markup.
    */
-  _createContentMarkup: function(transaction, context) {
+  _createContentMarkup: function(transaction, props, context) {
     var ret = '';
-    var props = this._currentElement.props;
 
     // Intentional use of != to avoid catching zero/false.
     var innerHTML = props.dangerouslySetInnerHTML;
@@ -427,13 +671,52 @@ ReactDOMComponent.Mixin = {
    * @overridable
    */
   updateComponent: function(transaction, prevElement, nextElement, context) {
-    assertValidProps(this, this._currentElement.props);
-    this._updateDOMProperties(prevElement.props, transaction);
+    var lastProps = prevElement.props;
+    var nextProps = this._currentElement.props;
+
+    switch (this._tag) {
+      case 'button':
+        lastProps = ReactDOMButton.getNativeProps(this, lastProps);
+        nextProps = ReactDOMButton.getNativeProps(this, nextProps);
+        break;
+      case 'input':
+        ReactDOMInput.updateWrapper(this);
+        lastProps = ReactDOMInput.getNativeProps(this, lastProps);
+        nextProps = ReactDOMInput.getNativeProps(this, nextProps);
+        break;
+      case 'option':
+        lastProps = ReactDOMOption.getNativeProps(this, lastProps);
+        nextProps = ReactDOMOption.getNativeProps(this, nextProps);
+        break;
+      case 'select':
+        lastProps = ReactDOMSelect.getNativeProps(this, lastProps);
+        nextProps = ReactDOMSelect.getNativeProps(this, nextProps);
+        break;
+      case 'textarea':
+        ReactDOMTextarea.updateWrapper(this);
+        lastProps = ReactDOMTextarea.getNativeProps(this, lastProps);
+        nextProps = ReactDOMTextarea.getNativeProps(this, nextProps);
+        break;
+    }
+
+    assertValidProps(this, nextProps);
+    this._updateDOMProperties(lastProps, nextProps, transaction);
     this._updateDOMChildren(
-      prevElement.props,
+      lastProps,
+      nextProps,
       transaction,
       processChildContext(context, this)
     );
+
+    if (!canDefineProperty && this._nodeWithLegacyProperties) {
+      this._nodeWithLegacyProperties.props = nextProps;
+    }
+
+    if (this._tag === 'select') {
+      // <select> value update needs to occur after <option> children
+      // reconciliation
+      transaction.getReactMountReady().enqueue(postUpdateSelectWrapper, this);
+    }
   },
 
   /**
@@ -449,10 +732,10 @@ ReactDOMComponent.Mixin = {
    *
    * @private
    * @param {object} lastProps
+   * @param {object} nextProps
    * @param {ReactReconcileTransaction} transaction
    */
-  _updateDOMProperties: function(lastProps, transaction) {
-    var nextProps = this._currentElement.props;
+  _updateDOMProperties: function(lastProps, nextProps, transaction) {
     var propKey;
     var styleName;
     var styleUpdates;
@@ -478,7 +761,7 @@ ReactDOMComponent.Mixin = {
           deleteListener(this._rootNodeID, propKey);
         }
       } else if (
-          DOMProperty.isStandardName[propKey] ||
+          DOMProperty.properties[propKey] ||
           DOMProperty.isCustomAttribute(propKey)) {
         BackendIDOperations.deletePropertyByID(
           this._rootNodeID,
@@ -535,8 +818,14 @@ ReactDOMComponent.Mixin = {
         } else if (lastProp) {
           deleteListener(this._rootNodeID, propKey);
         }
+      } else if (isCustomComponent(this._tag, nextProps)) {
+        BackendIDOperations.updateAttributeByID(
+          this._rootNodeID,
+          propKey,
+          nextProp
+        );
       } else if (
-          DOMProperty.isStandardName[propKey] ||
+          DOMProperty.properties[propKey] ||
           DOMProperty.isCustomAttribute(propKey)) {
         BackendIDOperations.updatePropertyByID(
           this._rootNodeID,
@@ -558,11 +847,11 @@ ReactDOMComponent.Mixin = {
    * children content.
    *
    * @param {object} lastProps
+   * @param {object} nextProps
    * @param {ReactReconcileTransaction} transaction
+   * @param {object} context
    */
-  _updateDOMChildren: function(lastProps, transaction, context) {
-    var nextProps = this._currentElement.props;
-
+  _updateDOMChildren: function(lastProps, nextProps, transaction, context) {
     var lastContent =
       CONTENT_TYPES[typeof lastProps.children] ? lastProps.children : null;
     var nextContent =
@@ -595,10 +884,7 @@ ReactDOMComponent.Mixin = {
       }
     } else if (nextHtml != null) {
       if (lastHtml !== nextHtml) {
-        BackendIDOperations.updateInnerHTMLByID(
-          this._rootNodeID,
-          nextHtml
-        );
+        this.updateMarkup('' + nextHtml);
       }
     } else if (nextChildren != null) {
       this.updateChildren(nextChildren, transaction, context);
@@ -612,17 +898,88 @@ ReactDOMComponent.Mixin = {
    * @internal
    */
   unmountComponent: function() {
+    switch (this._tag) {
+      case 'iframe':
+      case 'img':
+      case 'form':
+        var listeners = this._wrapperState.listeners;
+        if (listeners) {
+          for (var i = 0; i < listeners.length; i++) {
+            listeners[i].remove();
+          }
+        }
+        break;
+      case 'input':
+        ReactDOMInput.unmountWrapper(this);
+        break;
+      case 'html':
+      case 'head':
+      case 'body':
+        /**
+         * Components like <html> <head> and <body> can't be removed or added
+         * easily in a cross-browser way, however it's valuable to be able to
+         * take advantage of React's reconciliation for styling and <title>
+         * management. So we just document it and throw in dangerous cases.
+         */
+        invariant(
+          false,
+          '<%s> tried to unmount. Because of cross-browser quirks it is ' +
+          'impossible to unmount some top-level components (eg <html>, ' +
+          '<head>, and <body>) reliably and efficiently. To fix this, have a ' +
+          'single top-level component that never unmounts render these ' +
+          'elements.',
+          this._tag
+        );
+        break;
+    }
+
     this.unmountChildren();
     ReactBrowserEventEmitter.deleteAllListeners(this._rootNodeID);
     ReactComponentBrowserEnvironment.unmountIDFromEnvironment(this._rootNodeID);
     this._rootNodeID = null;
-  }
+    this._wrapperState = null;
+    if (this._nodeWithLegacyProperties) {
+      var node = this._nodeWithLegacyProperties;
+      node._reactInternalComponent = null;
+      this._nodeWithLegacyProperties = null;
+    }
+  },
+
+  getPublicInstance: function() {
+    if (!this._nodeWithLegacyProperties) {
+      var node = ReactMount.getNode(this._rootNodeID);
+
+      node._reactInternalComponent = this;
+      node.getDOMNode = legacyGetDOMNode;
+      node.isMounted = legacyIsMounted;
+      node.setState = legacySetStateEtc;
+      node.replaceState = legacySetStateEtc;
+      node.forceUpdate = legacySetStateEtc;
+      node.setProps = legacySetProps;
+      node.replaceProps = legacyReplaceProps;
+
+      if (__DEV__) {
+        if (canDefineProperty) {
+          Object.defineProperties(node, legacyPropsDescriptor);
+        } else {
+          // updateComponent will update this property on subsequent renders
+          node.props = this._currentElement.props;
+        }
+      } else {
+        // updateComponent will update this property on subsequent renders
+        node.props = this._currentElement.props;
+      }
+
+      this._nodeWithLegacyProperties = node;
+    }
+    return this._nodeWithLegacyProperties;
+  },
 
 };
 
 ReactPerf.measureMethods(ReactDOMComponent, 'ReactDOMComponent', {
   mountComponent: 'mountComponent',
-  updateComponent: 'updateComponent'
+  updateComponent: 'updateComponent',
 });
 
 assign(
@@ -634,7 +991,7 @@ assign(
 ReactDOMComponent.injection = {
   injectIDOperations: function(IDOperations) {
     ReactDOMComponent.BackendIDOperations = BackendIDOperations = IDOperations;
-  }
+  },
 };
 
 module.exports = ReactDOMComponent;

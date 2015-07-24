@@ -23,7 +23,7 @@ describe('findDOMNode', function() {
     var MyNode = React.createClass({
       render: function() {
         return <div><span>Noise</span></div>;
-      }
+      },
     });
 
     var myNode = ReactTestUtils.renderIntoDocument(<MyNode />);
@@ -34,14 +34,18 @@ describe('findDOMNode', function() {
   });
 
   it('findDOMNode should reject random objects', function() {
-    expect(function() {React.findDOMNode({foo: 'bar'});})
+    expect(function() {
+      React.findDOMNode({foo: 'bar'});
+    })
       .toThrow('Invariant Violation: Element appears to be neither ' +
         'ReactComponent nor DOMNode (keys: foo)'
       );
   });
 
   it('findDOMNode should reject unmounted objects with render func', function() {
-    expect(function() {React.findDOMNode({render: function() {}});})
+    expect(function() {
+      React.findDOMNode({render: function() {}});
+    })
       .toThrow('Invariant Violation: Component (with keys: render) ' +
         'contains `render` method but is not mounted in the DOM'
       );

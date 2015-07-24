@@ -1,6 +1,7 @@
 ---
 id: tutorial-ja-JP
 title: チュートリアル
+permalink: tutorial-ja-JP.html
 prev: getting-started-ja-JP.html
 next: thinking-in-react-ja-JP.html
 ---
@@ -35,12 +36,14 @@ next: thinking-in-react-ja-JP.html
 
 ```html
 <!-- index.html -->
+<!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8" />
     <title>Hello React</title>
-    <script src="https://fb.me/react-{{site.react_version}}.js"></script>
-    <script src="https://fb.me/JSXTransformer-{{site.react_version}}.js"></script>
-    <script src="https://code.jquery.com/jquery-1.10.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/{{site.react_version}}/react.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/{{site.react_version}}/JSXTransformer.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
   </head>
   <body>
     <div id="content"></div>
@@ -214,13 +217,14 @@ Markdown はインラインでテキストをフォーマットする簡単な�
 
 まず最初に、サードパーティ製の **Showdown** ライブラリをアプリケーションに追加します。 Showdown は Markdown テキストを生の HTML に変換する JavaScript ライブラリです。 既にある head タグの内側に script タグを書き込み、以下のように Showdown を読み込ませます。
 
-```html{7}
+```html{8}
 <!-- index.html -->
 <head>
+  <meta charset="UTF-8" />
   <title>Hello React</title>
-  <script src="https://fb.me/react-{{site.react_version}}.js"></script>
-  <script src="https://fb.me/JSXTransformer-{{site.react_version}}.js"></script>
-  <script src="https://code.jquery.com/jquery-1.10.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/{{site.react_version}}/react.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/{{site.react_version}}/JSXTransformer.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/0.3.1/showdown.min.js"></script>
 </head>
 ```

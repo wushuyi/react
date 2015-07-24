@@ -15,6 +15,7 @@
  * CSS properties which accept numbers but are not in units of "px".
  */
 var isUnitlessNumber = {
+  animationIterationCount: true,
   boxFlex: true,
   boxFlexGroup: true,
   columnCount: true,
@@ -38,7 +39,7 @@ var isUnitlessNumber = {
   fillOpacity: true,
   strokeDashoffset: true,
   strokeOpacity: true,
-  strokeWidth: true
+  strokeWidth: true,
 };
 
 /**
@@ -79,32 +80,32 @@ var shorthandPropertyExpansions = {
     backgroundImage: true,
     backgroundPosition: true,
     backgroundRepeat: true,
-    backgroundColor: true
+    backgroundColor: true,
   },
   border: {
     borderWidth: true,
     borderStyle: true,
-    borderColor: true
+    borderColor: true,
   },
   borderBottom: {
     borderBottomWidth: true,
     borderBottomStyle: true,
-    borderBottomColor: true
+    borderBottomColor: true,
   },
   borderLeft: {
     borderLeftWidth: true,
     borderLeftStyle: true,
-    borderLeftColor: true
+    borderLeftColor: true,
   },
   borderRight: {
     borderRightWidth: true,
     borderRightStyle: true,
-    borderRightColor: true
+    borderRightColor: true,
   },
   borderTop: {
     borderTopWidth: true,
     borderTopStyle: true,
-    borderTopColor: true
+    borderTopColor: true,
   },
   font: {
     fontStyle: true,
@@ -112,13 +113,13 @@ var shorthandPropertyExpansions = {
     fontWeight: true,
     fontSize: true,
     lineHeight: true,
-    fontFamily: true
-  }
+    fontFamily: true,
+  },
 };
 
 var CSSProperty = {
   isUnitlessNumber: isUnitlessNumber,
-  shorthandPropertyExpansions: shorthandPropertyExpansions
+  shorthandPropertyExpansions: shorthandPropertyExpansions,
 };
 
 module.exports = CSSProperty;

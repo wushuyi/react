@@ -13,14 +13,12 @@
 
 var CallbackQueue = require('CallbackQueue');
 var PooledClass = require('PooledClass');
-var ReactCurrentOwner = require('ReactCurrentOwner');
 var ReactPerf = require('ReactPerf');
 var ReactReconciler = require('ReactReconciler');
 var Transaction = require('Transaction');
 
 var assign = require('Object.assign');
 var invariant = require('invariant');
-var warning = require('warning');
 
 var dirtyComponents = [];
 var asapCallbackQueue = CallbackQueue.getPooled();
@@ -52,7 +50,7 @@ var NESTED_UPDATES = {
     } else {
       dirtyComponents.length = 0;
     }
-  }
+  },
 };
 
 var UPDATE_QUEUEING = {
@@ -61,7 +59,7 @@ var UPDATE_QUEUEING = {
   },
   close: function() {
     this.callbackQueue.notifyAll();
-  }
+  },
 };
 
 var TRANSACTION_WRAPPERS = [NESTED_UPDATES, UPDATE_QUEUEING];
@@ -100,7 +98,7 @@ assign(
       scope,
       a
     );
-  }
+  },
 });
 
 PooledClass.addPoolingTo(ReactUpdatesFlushTransaction);
@@ -203,13 +201,6 @@ function enqueueUpdate(component) {
   // verify that that's the case. (This is called by each top-level update
   // function, like setProps, setState, forceUpdate, etc.; creation and
   // destruction of top-level components is guarded in ReactMount.)
-  warning(
-    ReactCurrentOwner.current == null,
-    'enqueueUpdate(): Render methods should be a pure function of props ' +
-    'and state; triggering nested component updates from render is not ' +
-    'allowed. If necessary, trigger nested updates in ' +
-    'componentDidUpdate.'
-  );
 
   if (!batchingStrategy.isBatchingUpdates) {
     batchingStrategy.batchedUpdates(enqueueUpdate, component);
@@ -256,7 +247,7 @@ var ReactUpdatesInjection = {
       'ReactUpdates: must provide an isBatchingUpdates boolean attribute'
     );
     batchingStrategy = _batchingStrategy;
-  }
+  },
 };
 
 var ReactUpdates = {
@@ -272,7 +263,7 @@ var ReactUpdates = {
   enqueueUpdate: enqueueUpdate,
   flushBatchedUpdates: flushBatchedUpdates,
   injection: ReactUpdatesInjection,
-  asap: asap
+  asap: asap,
 };
 
 module.exports = ReactUpdates;

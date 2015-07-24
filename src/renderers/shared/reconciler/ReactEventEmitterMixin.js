@@ -33,16 +33,17 @@ var ReactEventEmitterMixin = {
       topLevelType,
       topLevelTarget,
       topLevelTargetID,
-      nativeEvent) {
+      nativeEvent,
+      nativeEventTarget) {
     var events = EventPluginHub.extractEvents(
       topLevelType,
       topLevelTarget,
       topLevelTargetID,
-      nativeEvent
+      nativeEvent,
+      nativeEventTarget
     );
-
     runEventQueueInBatch(events);
-  }
+  },
 };
 
 module.exports = ReactEventEmitterMixin;

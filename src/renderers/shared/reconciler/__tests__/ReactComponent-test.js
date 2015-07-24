@@ -12,19 +12,15 @@
 'use strict';
 
 var React;
-var ReactInstanceMap;
 var ReactTestUtils;
 
 var mocks;
-var reactComponentExpect;
 
 describe('ReactComponent', function() {
   beforeEach(function() {
     mocks = require('mocks');
     React = require('React');
-    ReactInstanceMap = require('ReactInstanceMap');
     ReactTestUtils = require('ReactTestUtils');
-    reactComponentExpect = require('reactComponentExpect');
   });
 
   it('should throw on invalid render targets', function() {
@@ -63,7 +59,7 @@ describe('ReactComponent', function() {
 
       render: function() {
         return <div>{this.props.children}</div>;
-      }
+      },
 
     });
 
@@ -76,7 +72,7 @@ describe('ReactComponent', function() {
       componentDidMount: function() {
         expect(this.refs.inner.getObject()).toEqual(innerObj);
         expect(this.refs.outer.getObject()).toEqual(outerObj);
-      }
+      },
     });
 
     var instance = <Component />;
@@ -90,12 +86,12 @@ describe('ReactComponent', function() {
       },
       componentDidMount: function() {
         expect(this.refs && this.refs.test).toEqual(undefined);
-      }
+      },
     });
     var Child = React.createClass({
       render: function() {
         return <div />;
-      }
+      },
     });
 
     var instance = <Parent child={<span />} />;
@@ -111,7 +107,7 @@ describe('ReactComponent', function() {
       },
       render: function() {
         return <div>{this.props.children}</div>;
-      }
+      },
     });
 
     var mounted = false;
@@ -129,7 +125,7 @@ describe('ReactComponent', function() {
         expect(this.innerRef.getObject()).toEqual(innerObj);
         expect(this.outerRef.getObject()).toEqual(outerObj);
         mounted = true;
-      }
+      },
     });
 
     var instance = <Component />;
@@ -139,9 +135,12 @@ describe('ReactComponent', function() {
 
   it('should support new-style refs with mixed-up owners', function() {
     var Wrapper = React.createClass({
+      getTitle: function() {
+        return this.props.title;
+      },
       render: function() {
         return this.props.getContent();
-      }
+      },
     });
 
     var mounted = false;
@@ -162,10 +161,10 @@ describe('ReactComponent', function() {
       },
       componentDidMount: function() {
         // Check .props.title to make sure we got the right elements back
-        expect(this.wrapperRef.props.title).toBe('wrapper');
-        expect(this.innerRef.props.title).toBe('inner');
+        expect(this.wrapperRef.getTitle()).toBe('wrapper');
+        expect(React.findDOMNode(this.innerRef).title).toBe('inner');
         mounted = true;
-      }
+      },
     });
 
     var instance = <Component />;
@@ -189,7 +188,7 @@ describe('ReactComponent', function() {
       },
       componentWillUnmount: function() {
         log.push(`inner ${this.props.id} componentWillUnmount`);
-      }
+      },
     });
 
     var Outer = React.createClass({
@@ -213,7 +212,7 @@ describe('ReactComponent', function() {
       },
       componentWillUnmount: function() {
         log.push('outer componentWillUnmount');
-      }
+      },
     });
 
     // mount, update, unmount
@@ -250,7 +249,7 @@ describe('ReactComponent', function() {
         'ref 1 got null',
         'inner 1 componentWillUnmount',
         'ref 2 got null',
-        'inner 2 componentWillUnmount'
+        'inner 2 componentWillUnmount',
     ]);
   });
 
@@ -268,16 +267,49 @@ describe('ReactComponent', function() {
   it('warns when calling getDOMNode', function() {
     spyOn(console, 'error');
 
+    var Potato = React.createClass({
+      render: function() {
+        return <div />;
+      },
+    });
     var container = document.createElement('div');
-    var instance = React.render(<div />, container);
+    var instance = React.render(<Potato />, container);
 
     instance.getDOMNode();
 
     expect(console.error.calls.length).toBe(1);
     expect(console.error.calls[0].args[0]).toContain(
-      'DIV.getDOMNode(...) is deprecated. Please use ' +
+      'Potato.getDOMNode(...) is deprecated. Please use ' +
       'React.findDOMNode(instance) instead.'
     );
+  });
+
+  it('throws usefully when rendering badly-typed elements', function() {
+    spyOn(console, 'error');
+
+    var X = undefined;
+    expect(() => ReactTestUtils.renderIntoDocument(<X />)).toThrow(
+      'Invariant Violation: Element type is invalid: expected a string (for ' +
+      'built-in components) or a class/function (for composite components) ' +
+      'but got: undefined.'
+    );
+
+    var Y = null;
+    expect(() => ReactTestUtils.renderIntoDocument(<Y />)).toThrow(
+      'Invariant Violation: Element type is invalid: expected a string (for ' +
+      'built-in components) or a class/function (for composite components) ' +
+      'but got: null.'
+    );
+
+    var Z = {};
+    expect(() => ReactTestUtils.renderIntoDocument(<Z />)).toThrow(
+      'Invariant Violation: Element type is invalid: expected a string (for ' +
+      'built-in components) or a class/function (for composite components) ' +
+      'but got: object.'
+    );
+
+    // One warning for each element creation
+    expect(console.error.calls.length).toBe(3);
   });
 
 });

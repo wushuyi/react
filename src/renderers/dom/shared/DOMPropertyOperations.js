@@ -17,12 +17,37 @@ var DOMProperty = require('DOMProperty');
 var quoteAttributeValueForBrowser = require('quoteAttributeValueForBrowser');
 var warning = require('warning');
 
-function shouldIgnoreValue(name, value) {
+// Simplified subset
+var VALID_ATTRIBUTE_NAME_REGEX = /^[a-zA-Z_][a-zA-Z_\.\-\d]*$/;
+var illegalAttributeNameCache = {};
+var validatedAttributeNameCache = {};
+
+function isAttributeNameSafe(attributeName) {
+  if (validatedAttributeNameCache.hasOwnProperty(attributeName)) {
+    return true;
+  }
+  if (illegalAttributeNameCache.hasOwnProperty(attributeName)) {
+    return false;
+  }
+  if (VALID_ATTRIBUTE_NAME_REGEX.test(attributeName)) {
+    validatedAttributeNameCache[attributeName] = true;
+    return true;
+  }
+  illegalAttributeNameCache[attributeName] = true;
+  warning(
+    false,
+    'Invalid attribute name: `%s`',
+    attributeName
+  );
+  return false;
+}
+
+function shouldIgnoreValue(propertyInfo, value) {
   return value == null ||
-    (DOMProperty.hasBooleanValue[name] && !value) ||
-    (DOMProperty.hasNumericValue[name] && isNaN(value)) ||
-    (DOMProperty.hasPositiveNumericValue[name] && (value < 1)) ||
-    (DOMProperty.hasOverloadedBooleanValue[name] && value === false);
+    (propertyInfo.hasBooleanValue && !value) ||
+    (propertyInfo.hasNumericValue && isNaN(value)) ||
+    (propertyInfo.hasPositiveNumericValue && (value < 1)) ||
+    (propertyInfo.hasOverloadedBooleanValue && value === false);
 }
 
 if (__DEV__) {
@@ -30,7 +55,7 @@ if (__DEV__) {
     children: true,
     dangerouslySetInnerHTML: true,
     key: true,
-    ref: true
+    ref: true,
   };
   var warnedProperties = {};
 
@@ -88,14 +113,15 @@ var DOMPropertyOperations = {
    * @return {?string} Markup string, or null if the property was invalid.
    */
   createMarkupForProperty: function(name, value) {
-    if (DOMProperty.isStandardName.hasOwnProperty(name) &&
-        DOMProperty.isStandardName[name]) {
-      if (shouldIgnoreValue(name, value)) {
+    var propertyInfo = DOMProperty.properties.hasOwnProperty(name) ?
+        DOMProperty.properties[name] : null;
+    if (propertyInfo) {
+      if (shouldIgnoreValue(propertyInfo, value)) {
         return '';
       }
-      var attributeName = DOMProperty.getAttributeName[name];
-      if (DOMProperty.hasBooleanValue[name] ||
-          (DOMProperty.hasOverloadedBooleanValue[name] && value === true)) {
+      var attributeName = propertyInfo.attributeName;
+      if (propertyInfo.hasBooleanValue ||
+          (propertyInfo.hasOverloadedBooleanValue && value === true)) {
         return attributeName + '=""';
       }
       return attributeName + '=' + quoteAttributeValueForBrowser(value);
@@ -111,6 +137,20 @@ var DOMPropertyOperations = {
   },
 
   /**
+   * Creates markup for a custom property.
+   *
+   * @param {string} name
+   * @param {*} value
+   * @return {string} Markup string, or empty string if the property was invalid.
+   */
+  createMarkupForCustomAttribute: function(name, value) {
+    if (!isAttributeNameSafe(name) || value == null) {
+      return '';
+    }
+    return name + '=' + quoteAttributeValueForBrowser(value);
+  },
+
+  /**
    * Sets the value for a property on a node.
    *
    * @param {DOMElement} node
@@ -118,16 +158,17 @@ var DOMPropertyOperations = {
    * @param {*} value
    */
   setValueForProperty: function(node, name, value) {
-    if (DOMProperty.isStandardName.hasOwnProperty(name) &&
-        DOMProperty.isStandardName[name]) {
-      var mutationMethod = DOMProperty.getMutationMethod[name];
+    var propertyInfo = DOMProperty.properties.hasOwnProperty(name) ?
+        DOMProperty.properties[name] : null;
+    if (propertyInfo) {
+      var mutationMethod = propertyInfo.mutationMethod;
       if (mutationMethod) {
         mutationMethod(node, value);
-      } else if (shouldIgnoreValue(name, value)) {
+      } else if (shouldIgnoreValue(propertyInfo, value)) {
         this.deleteValueForProperty(node, name);
-      } else if (DOMProperty.mustUseAttribute[name]) {
-        var attributeName = DOMProperty.getAttributeName[name];
-        var namespace = DOMProperty.getAttributeNamespace[name];
+      } else if (propertyInfo.mustUseAttribute) {
+        var attributeName = propertyInfo.attributeName;
+        var namespace = propertyInfo.attributeNamespace;
         // `setAttribute` with objects becomes only `[object]` in IE8/9,
         // ('' + value) makes it output the correct toString()-value.
         if (namespace) {
@@ -136,10 +177,10 @@ var DOMPropertyOperations = {
           node.setAttribute(attributeName, '' + value);
         }
       } else {
-        var propName = DOMProperty.getPropertyName[name];
+        var propName = propertyInfo.propertyName;
         // Must explicitly cast values for HAS_SIDE_EFFECTS-properties to the
         // property type before comparing; only `value` does and is string.
-        if (!DOMProperty.hasSideEffects[name] ||
+        if (!propertyInfo.hasSideEffects ||
             ('' + node[propName]) !== ('' + value)) {
           // Contrary to `setAttribute`, object properties are properly
           // `toString`ed by IE8/9.
@@ -147,13 +188,20 @@ var DOMPropertyOperations = {
         }
       }
     } else if (DOMProperty.isCustomAttribute(name)) {
-      if (value == null) {
-        node.removeAttribute(name);
-      } else {
-        node.setAttribute(name, '' + value);
-      }
+      DOMPropertyOperations.setValueForAttribute(node, name, value);
     } else if (__DEV__) {
       warnUnknownProperty(name);
+    }
+  },
+
+  setValueForAttribute: function(node, name, value) {
+    if (!isAttributeNameSafe(name)) {
+      return;
+    }
+    if (value == null) {
+      node.removeAttribute(name);
+    } else {
+      node.setAttribute(name, '' + value);
     }
   },
 
@@ -164,20 +212,21 @@ var DOMPropertyOperations = {
    * @param {string} name
    */
   deleteValueForProperty: function(node, name) {
-    if (DOMProperty.isStandardName.hasOwnProperty(name) &&
-        DOMProperty.isStandardName[name]) {
-      var mutationMethod = DOMProperty.getMutationMethod[name];
+    var propertyInfo = DOMProperty.properties.hasOwnProperty(name) ?
+        DOMProperty.properties[name] : null;
+    if (propertyInfo) {
+      var mutationMethod = propertyInfo.mutationMethod;
       if (mutationMethod) {
         mutationMethod(node, undefined);
-      } else if (DOMProperty.mustUseAttribute[name]) {
-        node.removeAttribute(DOMProperty.getAttributeName[name]);
+      } else if (propertyInfo.mustUseAttribute) {
+        node.removeAttribute(propertyInfo.attributeName);
       } else {
-        var propName = DOMProperty.getPropertyName[name];
+        var propName = propertyInfo.propertyName;
         var defaultValue = DOMProperty.getDefaultValueForProperty(
           node.nodeName,
           propName
         );
-        if (!DOMProperty.hasSideEffects[name] ||
+        if (!propertyInfo.hasSideEffects ||
             ('' + node[propName]) !== defaultValue) {
           node[propName] = defaultValue;
         }
@@ -187,7 +236,7 @@ var DOMPropertyOperations = {
     } else if (__DEV__) {
       warnUnknownProperty(name);
     }
-  }
+  },
 
 };
 

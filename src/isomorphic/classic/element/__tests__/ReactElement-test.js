@@ -14,8 +14,6 @@
 // NOTE: We're explicitly not using JSX in this file. This is intended to test
 // classic JS without JSX.
 
-var mocks;
-
 var React;
 var ReactTestUtils;
 
@@ -25,12 +23,12 @@ describe('ReactElement', function() {
   beforeEach(function() {
     require('mock-modules').dumpCache();
 
-    mocks = require('mocks');
-
     React = require('React');
     ReactTestUtils = require('ReactTestUtils');
     ComponentClass = React.createClass({
-      render: function() { return React.createElement('div'); }
+      render: function() {
+        return React.createElement('div');
+      },
     });
   });
 
@@ -39,7 +37,9 @@ describe('ReactElement', function() {
     expect(element.type).toBe(ComponentClass);
     expect(element.key).toBe(null);
     expect(element.ref).toBe(null);
-    expect(element.props).toEqual({});
+    var expectation = {};
+    Object.freeze(expectation);
+    expect(element.props).toEqual(expectation);
   });
 
   it('allows a string to be passed as the type', function() {
@@ -47,7 +47,9 @@ describe('ReactElement', function() {
     expect(element.type).toBe('div');
     expect(element.key).toBe(null);
     expect(element.ref).toBe(null);
-    expect(element.props).toEqual({});
+    var expectation = {};
+    Object.freeze(expectation);
+    expect(element.props).toEqual(expectation);
   });
 
   it('returns an immutable element', function() {
@@ -67,23 +69,27 @@ describe('ReactElement', function() {
     var element = React.createFactory(ComponentClass)({
       key: '12',
       ref: '34',
-      foo: '56'
+      foo: '56',
     });
     expect(element.type).toBe(ComponentClass);
     expect(element.key).toBe('12');
     expect(element.ref).toBe('34');
-    expect(element.props).toEqual({foo:'56'});
+    var expectation = {foo:'56'};
+    Object.freeze(expectation);
+    expect(element.props).toEqual(expectation);
   });
 
   it('coerces the key to a string', function() {
     var element = React.createFactory(ComponentClass)({
       key: 12,
-      foo: '56'
+      foo: '56',
     });
     expect(element.type).toBe(ComponentClass);
     expect(element.key).toBe('12');
     expect(element.ref).toBe(null);
-    expect(element.props).toEqual({foo:'56'});
+    var expectation = {foo:'56'};
+    Object.freeze(expectation);
+    expect(element.props).toEqual(expectation);
   });
 
   it('preserves the owner on the element', function() {
@@ -94,7 +100,7 @@ describe('ReactElement', function() {
       render: function() {
         element = Component();
         return element;
-      }
+      },
     });
 
     var instance = ReactTestUtils.renderIntoDocument(
@@ -108,7 +114,7 @@ describe('ReactElement', function() {
     spyOn(console, 'error');
     var a = 1;
     var element = React.createFactory(ComponentClass)({
-      children: 'text'
+      children: 'text',
     }, a);
     expect(element.props.children).toBe(a);
     expect(console.error.argsForCall.length).toBe(0);
@@ -117,7 +123,7 @@ describe('ReactElement', function() {
   it('does not override children if no rest args are provided', function() {
     spyOn(console, 'error');
     var element = React.createFactory(ComponentClass)({
-      children: 'text'
+      children: 'text',
     });
     expect(element.props.children).toBe('text');
     expect(console.error.argsForCall.length).toBe(0);
@@ -126,7 +132,7 @@ describe('ReactElement', function() {
   it('overrides children if null is provided as an argument', function() {
     spyOn(console, 'error');
     var element = React.createFactory(ComponentClass)({
-      children: 'text'
+      children: 'text',
     }, null);
     expect(element.props.children).toBe(null);
     expect(console.error.argsForCall.length).toBe(0);
@@ -143,21 +149,21 @@ describe('ReactElement', function() {
   it('allows static methods to be called using the type property', function() {
     spyOn(console, 'error');
 
-    var ComponentClass = React.createClass({
+    var StaticMethodComponentClass = React.createClass({
       statics: {
         someStaticMethod: function() {
           return 'someReturnValue';
-        }
+        },
       },
       getInitialState: function() {
         return {valueToReturn: 'hi'};
       },
       render: function() {
         return React.createElement('div');
-      }
+      },
     });
 
-    var element = React.createElement(ComponentClass);
+    var element = React.createElement(StaticMethodComponentClass);
     expect(element.type.someStaticMethod()).toBe('someReturnValue');
     expect(console.error.argsForCall.length).toBe(0);
   });
@@ -166,7 +172,7 @@ describe('ReactElement', function() {
     var Component = React.createClass({
       render: function() {
         return React.createElement('div');
-      }
+      },
     });
 
     expect(React.isValidElement(React.createElement('div')))
@@ -177,7 +183,7 @@ describe('ReactElement', function() {
     expect(React.isValidElement(null)).toEqual(false);
     expect(React.isValidElement(true)).toEqual(false);
     expect(React.isValidElement({})).toEqual(false);
-    expect(React.isValidElement("string")).toEqual(false);
+    expect(React.isValidElement('string')).toEqual(false);
     expect(React.isValidElement(React.DOM.div)).toEqual(false);
     expect(React.isValidElement(Component)).toEqual(false);
   });
@@ -189,12 +195,12 @@ describe('ReactElement', function() {
     var Component = React.createClass({
       render: () => null,
       statics: {
-        specialType: React.PropTypes.shape({monkey: React.PropTypes.any})
-      }
+        specialType: React.PropTypes.shape({monkey: React.PropTypes.any}),
+      },
     });
 
-    expect(typeof Component.specialType).toBe("function");
-    expect(typeof Component.specialType.isRequired).toBe("function");
+    expect(typeof Component.specialType).toBe('function');
+    expect(typeof Component.specialType.isRequired).toBe('function');
   });
 
   it('is indistinguishable from a plain object', function() {
@@ -210,7 +216,7 @@ describe('ReactElement', function() {
       },
       render: function() {
         return React.createElement('span');
-      }
+      },
     });
 
     var container = document.createElement('div');
@@ -231,7 +237,7 @@ describe('ReactElement', function() {
       },
       render: function() {
         return React.createElement('span', null, this.props.prop);
-      }
+      },
     });
 
     var instance = ReactTestUtils.renderIntoDocument(
@@ -245,84 +251,42 @@ describe('ReactElement', function() {
     expect(inst2.props.prop).toBe(null);
   });
 
-  it('warns when changing a prop after element creation', function() {
-    spyOn(console, 'error');
+  it('throws when changing a prop (in dev) after element creation', function() {
     var Outer = React.createClass({
       render: function() {
         var el = <div className="moo" />;
 
-        // This assignment warns but should still work for now.
-        el.props.className = 'quack';
-        expect(el.props.className).toBe('quack');
+        expect(function() {
+          el.props.className = 'quack';
+        }).toThrow();
+        expect(el.props.className).toBe('moo');
 
         return el;
-      }
+      },
     });
     var outer = ReactTestUtils.renderIntoDocument(<Outer color="orange" />);
-    expect(React.findDOMNode(outer).className).toBe('quack');
-
-    expect(console.error.argsForCall.length).toBe(1);
-    expect(console.error.argsForCall[0][0]).toContain(
-      'Don\'t set .props.className of the React component <div />.'
-    );
-    expect(console.error.argsForCall[0][0]).toContain(
-      'The element was created by Outer.'
-    );
-
-    console.error.reset();
-
-    // This also warns (just once per key/type pair)
-    outer.props.color = 'green';
-    outer.forceUpdate();
-    outer.props.color = 'purple';
-    outer.forceUpdate();
-
-    expect(console.error.argsForCall.length).toBe(1);
-    expect(console.error.argsForCall[0][0]).toContain(
-      'Don\'t set .props.color of the React component <Outer />.'
-    );
+    expect(React.findDOMNode(outer).className).toBe('moo');
   });
 
-  it('warns when adding a prop after element creation', function() {
-    spyOn(console, 'error');
-    var el = document.createElement('div');
+  it('throws when adding a prop (in dev) after element creation', function() {
+    var container = document.createElement('div');
     var Outer = React.createClass({
       getDefaultProps: () => ({sound: 'meow'}),
       render: function() {
         var el = <div>{this.props.sound}</div>;
 
-        // This assignment doesn't warn immediately (because we can't) but it
-        // warns upon mount.
-        el.props.className = 'quack';
-        expect(el.props.className).toBe('quack');
+        expect(function() {
+          el.props.className = 'quack';
+        }).toThrow();
+
+        expect(el.props.className).toBe(undefined);
 
         return el;
-      }
+      },
     });
-    var outer = React.render(<Outer />, el);
+    var outer = React.render(<Outer />, container);
     expect(React.findDOMNode(outer).textContent).toBe('meow');
-    expect(React.findDOMNode(outer).className).toBe('quack');
-
-    expect(console.error.argsForCall.length).toBe(1);
-    expect(console.error.argsForCall[0][0]).toContain(
-      'Don\'t set .props.className of the React component <div />.'
-    );
-    expect(console.error.argsForCall[0][0]).toContain(
-      'The element was created by Outer.'
-    );
-
-    console.error.reset();
-
-    var newOuterEl = <Outer />;
-    newOuterEl.props.sound = 'oink';
-    outer = React.render(newOuterEl, el);
-    expect(React.findDOMNode(outer).textContent).toBe('oink');
-    expect(React.findDOMNode(outer).className).toBe('quack');
-
-    expect(console.error.argsForCall.length).toBe(1);
-    expect(console.error.argsForCall[0][0]).toContain(
-      'Don\'t set .props.sound of the React component <Outer />.'
-    );
+    expect(React.findDOMNode(outer).className).toBe('');
   });
 
   it('does not warn for NaN props', function() {
@@ -330,7 +294,7 @@ describe('ReactElement', function() {
     var Test = React.createClass({
       render: function() {
         return <div />;
-      }
+      },
     });
     var test = ReactTestUtils.renderIntoDocument(<Test value={+undefined} />);
     expect(test.props.value).toBeNaN();

@@ -23,12 +23,12 @@ describe('renderSubtreeIntoContainer', function() {
 
     var Component = React.createClass({
       contextTypes: {
-        foo: React.PropTypes.string.isRequired
+        foo: React.PropTypes.string.isRequired,
       },
 
       render: function() {
         return <div>{this.context.foo}</div>;
-      }
+      },
     });
 
     var Parent = React.createClass({
@@ -38,7 +38,7 @@ describe('renderSubtreeIntoContainer', function() {
 
       getChildContext: function() {
         return {
-          foo: 'bar'
+          foo: 'bar',
         };
       },
 
@@ -50,7 +50,7 @@ describe('renderSubtreeIntoContainer', function() {
         expect(function() {
           renderSubtreeIntoContainer(this, <Component />, portal);
         }.bind(this)).not.toThrow();
-      }
+      },
     });
 
     ReactTestUtils.renderIntoDocument(<Parent />);
@@ -62,12 +62,12 @@ describe('renderSubtreeIntoContainer', function() {
 
     var Component = React.createClass({
       contextTypes: {
-        foo: React.PropTypes.string.isRequired
+        foo: React.PropTypes.string.isRequired,
       },
 
       render: function() {
         return <div>{this.context.foo}</div>;
-      }
+      },
     });
 
     var Parent = React.createClass({
@@ -77,7 +77,7 @@ describe('renderSubtreeIntoContainer', function() {
 
       getChildContext: function() {
         return {
-          foo: 'bar'
+          foo: 'bar',
         };
       },
 
@@ -90,7 +90,7 @@ describe('renderSubtreeIntoContainer', function() {
           renderSubtreeIntoContainer(<Parent />, <Component />, portal);
         }).toThrow('Invariant Violation: parentComponent' +
           'must be a valid React Component');
-      }
+      },
     });
   });
 });

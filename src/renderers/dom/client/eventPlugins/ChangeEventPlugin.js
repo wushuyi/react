@@ -28,7 +28,7 @@ var eventTypes = {
   change: {
     phasedRegistrationNames: {
       bubbled: keyOf({onChange: null}),
-      captured: keyOf({onChangeCapture: null})
+      captured: keyOf({onChangeCapture: null}),
     },
     dependencies: [
       topLevelTypes.topBlur,
@@ -38,9 +38,9 @@ var eventTypes = {
       topLevelTypes.topInput,
       topLevelTypes.topKeyDown,
       topLevelTypes.topKeyUp,
-      topLevelTypes.topSelectionChange
-    ]
-  }
+      topLevelTypes.topSelectionChange,
+    ],
+  },
 };
 
 /**
@@ -55,9 +55,10 @@ var activeElementValueProp = null;
  * SECTION: handle `change` event
  */
 function shouldUseChangeEvent(elem) {
+  var nodeName = elem.nodeName && elem.nodeName.toLowerCase();
   return (
-    elem.nodeName === 'SELECT' ||
-    (elem.nodeName === 'INPUT' && elem.type === 'file')
+    nodeName === 'select' ||
+    (nodeName === 'input' && elem.type === 'file')
   );
 }
 
@@ -73,7 +74,8 @@ function manualDispatchChangeEvent(nativeEvent) {
   var event = SyntheticEvent.getPooled(
     eventTypes.change,
     activeElementID,
-    nativeEvent
+    nativeEvent,
+    nativeEvent.target
   );
   EventPropagators.accumulateTwoPhaseDispatches(event);
 
@@ -158,7 +160,7 @@ var newValueProp = {
     // Cast to a string so we can do equality checks.
     activeElementValue = '' + val;
     activeElementValueProp.set.call(this, val);
-  }
+  },
 };
 
 /**
@@ -289,7 +291,7 @@ function shouldUseClickEvent(elem) {
   // This approach works across all browsers, whereas `change` does not fire
   // until `blur` in IE8.
   return (
-    elem.nodeName === 'INPUT' &&
+    (elem.nodeName && elem.nodeName.toLowerCase() === 'input') &&
     (elem.type === 'checkbox' || elem.type === 'radio')
   );
 }
@@ -329,7 +331,8 @@ var ChangeEventPlugin = {
       topLevelType,
       topLevelTarget,
       topLevelTargetID,
-      nativeEvent) {
+      nativeEvent,
+      nativeEventTarget) {
 
     var getTargetIDFunc, handleEventFunc;
     if (shouldUseChangeEvent(topLevelTarget)) {
@@ -359,8 +362,10 @@ var ChangeEventPlugin = {
         var event = SyntheticEvent.getPooled(
           eventTypes.change,
           targetID,
-          nativeEvent
+          nativeEvent,
+          nativeEventTarget
         );
+        event.type = 'change';
         EventPropagators.accumulateTwoPhaseDispatches(event);
         return event;
       }
@@ -373,7 +378,7 @@ var ChangeEventPlugin = {
         topLevelTargetID
       );
     }
-  }
+  },
 
 };
 

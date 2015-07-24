@@ -22,7 +22,7 @@ var SEPARATOR_LENGTH = SEPARATOR.length;
 /**
  * Maximum depth of traversals before we consider the possibility of a bad ID.
  */
-var MAX_TREE_DEPTH = 100;
+var MAX_TREE_DEPTH = 10000;
 
 /**
  * Creates a DOM ID prefix to use when mounting React components.
@@ -168,6 +168,7 @@ function getFirstCommonAncestorID(oneID, twoID) {
  * @param {?string} start ID at which to start traversal.
  * @param {?string} stop ID at which to end traversal.
  * @param {function} cb Callback to invoke each ID with.
+ * @param {*} arg Argument to invoke the callback with.
  * @param {?boolean} skipFirst Whether or not to skip the first node.
  * @param {?boolean} skipLast Whether or not to skip the last node.
  * @private
@@ -204,7 +205,7 @@ function traverseParentPath(start, stop, cb, arg, skipFirst, skipLast) {
       depth++ < MAX_TREE_DEPTH,
       'traverseParentPath(%s, %s, ...): Detected an infinite loop while ' +
       'traversing the React DOM ID tree. This may be due to malformed IDs: %s',
-      start, stop
+      start, stop, id
     );
   }
 }
@@ -331,7 +332,7 @@ var ReactInstanceHandles = {
 
   isAncestorIDOf: isAncestorIDOf,
 
-  SEPARATOR: SEPARATOR
+  SEPARATOR: SEPARATOR,
 
 };
 

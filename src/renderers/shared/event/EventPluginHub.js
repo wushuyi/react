@@ -131,7 +131,7 @@ var EventPluginHub = {
     /**
      * @param {object} injectedNamesToPlugins Map from names to plugin modules.
      */
-    injectEventPluginsByName: EventPluginRegistry.injectEventPluginsByName
+    injectEventPluginsByName: EventPluginRegistry.injectEventPluginsByName,
 
   },
 
@@ -230,7 +230,8 @@ var EventPluginHub = {
       topLevelType,
       topLevelTarget,
       topLevelTargetID,
-      nativeEvent) {
+      nativeEvent,
+      nativeEventTarget) {
     var events;
     var plugins = EventPluginRegistry.plugins;
     for (var i = 0; i < plugins.length; i++) {
@@ -241,7 +242,8 @@ var EventPluginHub = {
           topLevelType,
           topLevelTarget,
           topLevelTargetID,
-          nativeEvent
+          nativeEvent,
+          nativeEventTarget
         );
         if (extractedEvents) {
           events = accumulateInto(events, extractedEvents);
@@ -291,7 +293,7 @@ var EventPluginHub = {
 
   __getListenerBank: function() {
     return listenerBank;
-  }
+  },
 
 };
 

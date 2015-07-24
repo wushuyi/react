@@ -12,18 +12,14 @@
 'use strict';
 
 var ReactComponentEnvironment = require('ReactComponentEnvironment');
-var ReactContext = require('ReactContext');
 var ReactCurrentOwner = require('ReactCurrentOwner');
 var ReactElement = require('ReactElement');
-var ReactElementValidator = require('ReactElementValidator');
 var ReactInstanceMap = require('ReactInstanceMap');
-var ReactLifeCycle = require('ReactLifeCycle');
-var ReactNativeComponent = require('ReactNativeComponent');
 var ReactPerf = require('ReactPerf');
 var ReactPropTypeLocations = require('ReactPropTypeLocations');
 var ReactPropTypeLocationNames = require('ReactPropTypeLocationNames');
 var ReactReconciler = require('ReactReconciler');
-var ReactUpdates = require('ReactUpdates');
+var ReactUpdateQueue = require('ReactUpdateQueue');
 
 var assign = require('Object.assign');
 var emptyObject = require('emptyObject');
@@ -104,7 +100,7 @@ var ReactCompositeComponentMixin = {
 
     this._context = null;
     this._mountOrder = 0;
-    this._isTopLevel = false;
+    this._topLevelWrapper = null;
 
     // See ReactUpdates and ReactUpdateQueue.
     this._pendingCallbacks = null;
@@ -127,12 +123,10 @@ var ReactCompositeComponentMixin = {
     var publicProps = this._processProps(this._currentElement.props);
     var publicContext = this._processContext(context);
 
-    var Component = ReactNativeComponent.getComponentClassForElement(
-      this._currentElement
-    );
+    var Component = this._currentElement.type;
 
     // Initialize the public class
-    var inst = new Component(publicProps, publicContext);
+    var inst = new Component(publicProps, publicContext, ReactUpdateQueue);
 
     if (__DEV__) {
       // This will throw later in _renderValidatedComponent, but add an early
@@ -152,6 +146,7 @@ var ReactCompositeComponentMixin = {
     inst.props = publicProps;
     inst.context = publicContext;
     inst.refs = emptyObject;
+    inst.updater = ReactUpdateQueue;
 
     this._instance = inst;
 
@@ -198,6 +193,19 @@ var ReactCompositeComponentMixin = {
         'expected to return a value.',
         (this.getName() || 'A component')
       );
+      warning(
+        typeof inst.componentDidUnmount !== 'function',
+        '%s has a method called ' +
+        'componentDidUnmount(). But there is no such lifecycle method. ' +
+        'Did you mean componentWillUnmount()?',
+        this.getName() || 'A component'
+      );
+      warning(
+        typeof inst.componentWillRecieveProps !== 'function',
+        '%s has a method called ' +
+        'componentWillRecieveProps(). Did you mean componentWillReceiveProps()?',
+        (this.getName() || 'A component')
+      );
     }
 
     var initialState = inst.state;
@@ -214,28 +222,19 @@ var ReactCompositeComponentMixin = {
     this._pendingReplaceState = false;
     this._pendingForceUpdate = false;
 
-    var renderedElement;
-
-    var previouslyMounting = ReactLifeCycle.currentlyMountingInstance;
-    ReactLifeCycle.currentlyMountingInstance = this;
-    try {
-      if (inst.componentWillMount) {
-        inst.componentWillMount();
-        // When mounting, calls to `setState` by `componentWillMount` will set
-        // `this._pendingStateQueue` without triggering a re-render.
-        if (this._pendingStateQueue) {
-          inst.state = this._processPendingState(inst.props, inst.context);
-        }
+    if (inst.componentWillMount) {
+      inst.componentWillMount();
+      // When mounting, calls to `setState` by `componentWillMount` will set
+      // `this._pendingStateQueue` without triggering a re-render.
+      if (this._pendingStateQueue) {
+        inst.state = this._processPendingState(inst.props, inst.context);
       }
-
-      renderedElement = this._renderValidatedComponent();
-    } finally {
-      ReactLifeCycle.currentlyMountingInstance = previouslyMounting;
     }
 
+    var renderedElement = this._renderValidatedComponent();
+
     this._renderedComponent = this._instantiateReactComponent(
-      renderedElement,
-      this._currentElement.type // The wrapping type
+      renderedElement
     );
 
     var markup = ReactReconciler.mountComponent(
@@ -261,19 +260,15 @@ var ReactCompositeComponentMixin = {
     var inst = this._instance;
 
     if (inst.componentWillUnmount) {
-      var previouslyUnmounting = ReactLifeCycle.currentlyUnmountingInstance;
-      ReactLifeCycle.currentlyUnmountingInstance = this;
-      try {
-        inst.componentWillUnmount();
-      } finally {
-        ReactLifeCycle.currentlyUnmountingInstance = previouslyUnmounting;
-      }
+      inst.componentWillUnmount();
     }
 
     ReactReconciler.unmountComponent(this._renderedComponent);
     this._renderedComponent = null;
 
     // Reset pending fields
+    // Even if this component is scheduled for another update in ReactUpdates,
+    // it would still be ignored because these fields are reset.
     this._pendingStateQueue = null;
     this._pendingReplaceState = false;
     this._pendingForceUpdate = false;
@@ -284,6 +279,7 @@ var ReactCompositeComponentMixin = {
     // longer accessible.
     this._context = null;
     this._rootNodeID = null;
+    this._topLevelWrapper = null;
 
     // Delete the reference from the instance to this internal representation
     // which allow the internals to be properly cleaned up even if the user
@@ -298,25 +294,6 @@ var ReactCompositeComponentMixin = {
   },
 
   /**
-   * Schedule a partial update to the props. Only used for internal testing.
-   *
-   * @param {object} partialProps Subset of the next props.
-   * @param {?function} callback Called after props are updated.
-   * @final
-   * @internal
-   */
-  _setPropsInternal: function(partialProps, callback) {
-    // This is a deoptimized path. We optimize for always having an element.
-    // This creates an extra internal element.
-    var element = this._pendingElement || this._currentElement;
-    this._pendingElement = ReactElement.cloneAndReplaceProps(
-      element,
-      assign({}, element.props, partialProps)
-    );
-    ReactUpdates.enqueueUpdate(this, callback);
-  },
-
-  /**
    * Filters the context object to only contain keys specified in
    * `contextTypes`
    *
@@ -326,9 +303,7 @@ var ReactCompositeComponentMixin = {
    */
   _maskContext: function(context) {
     var maskedContext = null;
-    var Component = ReactNativeComponent.getComponentClassForElement(
-      this._currentElement
-    );
+    var Component = this._currentElement.type;
     var contextTypes = Component.contextTypes;
     if (!contextTypes) {
       return emptyObject;
@@ -351,9 +326,7 @@ var ReactCompositeComponentMixin = {
   _processContext: function(context) {
     var maskedContext = this._maskContext(context);
     if (__DEV__) {
-      var Component = ReactNativeComponent.getComponentClassForElement(
-        this._currentElement
-      );
+      var Component = this._currentElement.type;
       if (Component.contextTypes) {
         this._checkPropTypes(
           Component.contextTypes,
@@ -371,25 +344,26 @@ var ReactCompositeComponentMixin = {
    * @private
    */
   _processChildContext: function(currentContext) {
+    var Component = this._currentElement.type;
     var inst = this._instance;
     var childContext = inst.getChildContext && inst.getChildContext();
     if (childContext) {
       invariant(
-        typeof inst.constructor.childContextTypes === 'object',
+        typeof Component.childContextTypes === 'object',
         '%s.getChildContext(): childContextTypes must be defined in order to ' +
         'use getChildContext().',
         this.getName() || 'ReactCompositeComponent'
       );
       if (__DEV__) {
         this._checkPropTypes(
-          inst.constructor.childContextTypes,
+          Component.childContextTypes,
           childContext,
           ReactPropTypeLocations.childContext
         );
       }
       for (var name in childContext) {
         invariant(
-          name in inst.constructor.childContextTypes,
+          name in Component.childContextTypes,
           '%s.getChildContext(): key "%s" is not defined in childContextTypes.',
           this.getName() || 'ReactCompositeComponent',
           name
@@ -411,9 +385,7 @@ var ReactCompositeComponentMixin = {
    */
   _processProps: function(newProps) {
     if (__DEV__) {
-      var Component = ReactNativeComponent.getComponentClassForElement(
-        this._currentElement
-      );
+      var Component = this._currentElement.type;
       if (Component.propTypes) {
         this._checkPropTypes(
           Component.propTypes,
@@ -515,12 +487,6 @@ var ReactCompositeComponentMixin = {
     }
 
     if (this._pendingStateQueue !== null || this._pendingForceUpdate) {
-      if (__DEV__) {
-        ReactElementValidator.checkAndWarnForMutatedProps(
-          this._currentElement
-        );
-      }
-
       this.updateComponent(
         transaction,
         this._currentElement,
@@ -555,14 +521,18 @@ var ReactCompositeComponentMixin = {
   ) {
     var inst = this._instance;
 
-    var nextContext = inst.context;
-    var nextProps = inst.props;
+    var nextContext = this._context === nextUnmaskedContext ?
+      inst.context :
+      this._processContext(nextUnmaskedContext);
+    var nextProps;
 
     // Distinguish between a props update versus a simple state update
-    if (prevParentElement !== nextParentElement) {
-      nextContext = this._processContext(nextUnmaskedContext);
+    if (prevParentElement === nextParentElement) {
+      // Skip checking prop types again -- we don't read inst.props to avoid
+      // warning for DOM component props in this upgrade
+      nextProps = nextParentElement.props;
+    } else {
       nextProps = this._processProps(nextParentElement.props);
-
       // An update here will schedule an update but immediately set
       // _pendingStateQueue which will ensure that any state updates gets
       // immediately reconciled instead of waiting for the next batch.
@@ -661,9 +631,15 @@ var ReactCompositeComponentMixin = {
   ) {
     var inst = this._instance;
 
-    var prevProps = inst.props;
-    var prevState = inst.state;
-    var prevContext = inst.context;
+    var hasComponentDidUpdate = Boolean(inst.componentDidUpdate);
+    var prevProps;
+    var prevState;
+    var prevContext;
+    if (hasComponentDidUpdate) {
+      prevProps = inst.props;
+      prevState = inst.state;
+      prevContext = inst.context;
+    }
 
     if (inst.componentWillUpdate) {
       inst.componentWillUpdate(nextProps, nextState, nextContext);
@@ -677,7 +653,7 @@ var ReactCompositeComponentMixin = {
 
     this._updateRenderedComponent(transaction, unmaskedContext);
 
-    if (inst.componentDidUpdate) {
+    if (hasComponentDidUpdate) {
       transaction.getReactMountReady().enqueue(
         inst.componentDidUpdate.bind(inst, prevProps, prevState, prevContext),
         inst
@@ -709,8 +685,7 @@ var ReactCompositeComponentMixin = {
       ReactReconciler.unmountComponent(prevComponentInstance);
 
       this._renderedComponent = this._instantiateReactComponent(
-        nextRenderedElement,
-        this._currentElement.type
+        nextRenderedElement
       );
       var nextMarkup = ReactReconciler.mountComponent(
         this._renderedComponent,
@@ -756,16 +731,11 @@ var ReactCompositeComponentMixin = {
    */
   _renderValidatedComponent: function() {
     var renderedComponent;
-    var previousContext = ReactContext.current;
-    ReactContext.current = this._processChildContext(
-      this._currentElement._context
-    );
     ReactCurrentOwner.current = this;
     try {
       renderedComponent =
         this._renderValidatedComponentWithoutOwnerOrContext();
     } finally {
-      ReactContext.current = previousContext;
       ReactCurrentOwner.current = null;
     }
     invariant(
@@ -834,7 +804,7 @@ var ReactCompositeComponentMixin = {
   },
 
   // Stub
-  _instantiateReactComponent: null
+  _instantiateReactComponent: null,
 
 };
 
@@ -844,13 +814,13 @@ ReactPerf.measureMethods(
   {
     mountComponent: 'mountComponent',
     updateComponent: 'updateComponent',
-    _renderValidatedComponent: '_renderValidatedComponent'
+    _renderValidatedComponent: '_renderValidatedComponent',
   }
 );
 
 var ReactCompositeComponent = {
 
-  Mixin: ReactCompositeComponentMixin
+  Mixin: ReactCompositeComponentMixin,
 
 };
 

@@ -28,7 +28,6 @@ var ReactTransitionGroup = require('ReactTransitionGroup');
 var ReactUpdates = require('ReactUpdates');
 
 var cloneWithProps = require('cloneWithProps');
-var renderSubtreeIntoContainer = require('renderSubtreeIntoContainer');
 var shallowCompare = require('shallowCompare');
 var update = require('update');
 
@@ -41,9 +40,8 @@ React.addons = {
   batchedUpdates: ReactUpdates.batchedUpdates,
   cloneWithProps: cloneWithProps,
   createFragment: ReactFragment.create,
-  renderSubtreeIntoContainer: renderSubtreeIntoContainer,
   shallowCompare: shallowCompare,
-  update: update
+  update: update,
 };
 
 if (__DEV__) {

@@ -31,7 +31,7 @@ var ON_DOM_READY_QUEUEING = {
     this.reactMountReady.reset();
   },
 
-  close: emptyFunction
+  close: emptyFunction,
 };
 
 /**
@@ -40,7 +40,7 @@ var ON_DOM_READY_QUEUEING = {
  * each other.
  */
 var TRANSACTION_WRAPPERS = [
-  ON_DOM_READY_QUEUEING
+  ON_DOM_READY_QUEUEING,
 ];
 
 /**
@@ -58,7 +58,7 @@ var Mixin = {
    * @see Transaction
    * @abstract
    * @final
-   * @return {array} Empty list of operation wrap proceedures.
+   * @return {array} Empty list of operation wrap procedures.
    */
   getTransactionWrappers: function() {
     return TRANSACTION_WRAPPERS;
@@ -73,12 +73,12 @@ var Mixin = {
 
   /**
    * `PooledClass` looks for this, and will invoke this before allowing this
-   * instance to be resused.
+   * instance to be reused.
    */
   destructor: function() {
     CallbackQueue.release(this.reactMountReady);
     this.reactMountReady = null;
-  }
+  },
 };
 
 

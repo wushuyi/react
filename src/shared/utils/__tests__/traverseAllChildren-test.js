@@ -16,6 +16,7 @@ describe('traverseAllChildren', function() {
   var React;
   var ReactFragment;
   beforeEach(function() {
+    require('mock-modules').dumpCache();
     traverseAllChildren = require('traverseAllChildren');
     React = require('React');
     ReactFragment = require('ReactFragment');
@@ -64,6 +65,7 @@ describe('traverseAllChildren', function() {
   });
 
   it('should treat single child in array as expected', function() {
+    spyOn(console, 'error');
     var traverseContext = [];
     var traverseFn =
       jasmine.createSpy().andCallFake(function(context, kid, key, index) {
@@ -79,6 +81,8 @@ describe('traverseAllChildren', function() {
       '.0'
     );
     expect(traverseContext.length).toEqual(1);
+    expect(console.error.calls.length).toBe(1);
+    expect(console.error.calls[0].args[0]).toContain('Warning: Each child in an array or iterator should have a unique "key" prop.');
   });
 
   it('should be called for each child', function() {
@@ -205,11 +209,13 @@ describe('traverseAllChildren', function() {
 
     var instance = (
       <div>{
-        [frag({
-          firstHalfKey: [zero, one, two],
-          secondHalfKey: [three, four],
-          keyFive: five
-        })]
+        [
+          frag({
+            firstHalfKey: [zero, one, two],
+            secondHalfKey: [three, four],
+            keyFive: five,
+          }),
+        ]
       }</div>
     );
 
@@ -281,6 +287,7 @@ describe('traverseAllChildren', function() {
   });
 
   it('should be called for each child in an iterable without keys', function() {
+    spyOn(console, 'error');
     var threeDivIterable = {
       '@@iterator': function() {
         var i = 0;
@@ -291,9 +298,9 @@ describe('traverseAllChildren', function() {
             } else {
               return {value: undefined, done: true};
             }
-          }
+          },
         };
-      }
+      },
     };
 
     var traverseContext = [];
@@ -326,6 +333,9 @@ describe('traverseAllChildren', function() {
       traverseContext[2],
       '.2'
     );
+
+    expect(console.error.calls.length).toBe(1);
+    expect(console.error.calls[0].args[0]).toContain('Warning: Each child in an array or iterator should have a unique "key" prop.');
   });
 
   it('should be called for each child in an iterable with keys', function() {
@@ -339,9 +349,9 @@ describe('traverseAllChildren', function() {
             } else {
               return {value: undefined, done: true};
             }
-          }
+          },
         };
-      }
+      },
     };
 
     var traverseContext = [];
@@ -389,9 +399,9 @@ describe('traverseAllChildren', function() {
             } else {
               return {value: undefined, done: true};
             }
-          }
+          },
         };
-      }
+      },
     };
     threeDivEntryIterable.entries = threeDivEntryIterable['@@iterator'];
 

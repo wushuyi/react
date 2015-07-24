@@ -19,7 +19,7 @@ var SyntheticEvent = require('SyntheticEvent');
  * @see http://www.w3.org/TR/DOM-Level-3-Events/#events-compositionevents
  */
 var CompositionEventInterface = {
-  data: null
+  data: null,
 };
 
 /**
@@ -31,8 +31,9 @@ var CompositionEventInterface = {
 function SyntheticCompositionEvent(
   dispatchConfig,
   dispatchMarker,
-  nativeEvent) {
-  SyntheticEvent.call(this, dispatchConfig, dispatchMarker, nativeEvent);
+  nativeEvent,
+  nativeEventTarget) {
+  SyntheticEvent.call(this, dispatchConfig, dispatchMarker, nativeEvent, nativeEventTarget);
 }
 
 SyntheticEvent.augmentClass(

@@ -12,7 +12,6 @@
 'use strict';
 
 var React = require('React');
-var ReactTestUtils = require('ReactTestUtils');
 var ReactErrorUtils = require('ReactErrorUtils');
 
 describe('ReactCompositeComponent-error', function() {
@@ -23,10 +22,10 @@ describe('ReactCompositeComponent-error', function() {
       someHandler: function() {},
       render: function() {
         return <div />;
-      }
+      },
     });
 
-    new Component();
+    void new Component();
 
     expect(ReactErrorUtils.guard.mostRecentCall.args[1])
       .toEqual('Component.someHandler');

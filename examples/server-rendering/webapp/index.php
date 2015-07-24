@@ -52,8 +52,10 @@ SCRIPT;
 }
 ?>
 
+<!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8">
     <title>React server rendering example</title>
     <script src="static/bundle.js"></script>
   </head>

@@ -36,12 +36,14 @@ next: thinking-in-react-ko-KR.html
 
 ```html
 <!-- index.html -->
+<!DOCTYPE html>
 <html>
   <head>
+    <meta charset="UTF-8" />
     <title>Hello React</title>
-    <script src="https://fb.me/react-{{site.react_version}}.js"></script>
-    <script src="https://fb.me/JSXTransformer-{{site.react_version}}.js"></script>
-    <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/{{site.react_version}}/react.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/{{site.react_version}}/JSXTransformer.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
   </head>
   <body>
     <div id="content"></div>
@@ -52,7 +54,7 @@ next: thinking-in-react-ko-KR.html
 </html>
 ```
 
-다음 진행을 위해, 위의 스크립트 태그안에 JavaScript 코드를 작성합니다.
+다음 진행을 위해, 위의 스크립트 태그안에 JavaScript 코드를 작성합니다. 각 단계를 추가한 다음 index.html 파일을 브라우저에서 열어서 진행을 확인하세요.
 
 > 주의:
 >
@@ -218,13 +220,14 @@ Markdown은 텍스트를 포맷팅하는 간단한 방식입니다. 예를 들�
 
 먼저 서드파티 라이브러리인 **marked**를 애플리케이션에 추가합니다. 이 JavaScript 라이브러리는 Markdown 텍스트를 HTML 문법으로 변환해줍니다. head 태그안에 스크립트 태그를 추가해 주세요. (React playground에는 이미 포함되어 있습니다):
 
-```html{7}
+```html{8}
 <!-- index.html -->
 <head>
+  <meta charset="UTF-8" />
   <title>Hello React</title>
-  <script src="https://fb.me/react-{{site.react_version}}.js"></script>
-  <script src="https://fb.me/JSXTransformer-{{site.react_version}}.js"></script>
-  <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/{{site.react_version}}/react.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/{{site.react_version}}/JSXTransformer.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/0.3.2/marked.min.js"></script>
 </head>
 ```
@@ -376,7 +379,7 @@ var CommentBox = React.createClass({
 
 ### state 업데이트하기
 
-컴포넌트의 최초 생성 시에, 서버에서 GET 방식으로 JSON을 넘겨받아 최신의 데이터가 state에 반영되길 원했습니다. 실제 애플리케이션에선 이것이 동적인 엔드포인트이지만, 이 예제에서는 정적 JSON 파일을 사용해서 간단하게 만들어보겠습니다.
+컴포넌트의 최초 생성 시에, 서버에서 GET 방식으로 JSON을 넘겨받아 최신의 데이터가 state에 반영되길 원했습니다. 실제 애플리케이션에선 이것이 동적인 엔드포인트이지만, 이 예제에서는 단순히하기 위해 comments의 배열이 담긴 정적 JSON 파일 `public/comments.json`을 사용하겠습니다.
 
 ```javascript
 // tutorial13.json

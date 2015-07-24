@@ -1,4 +1,4 @@
-# [React](https://facebook.github.io/react) [![Build Status](https://travis-ci.org/facebook/react.svg?branch=master)](https://travis-ci.org/facebook/react) [![npm version](https://badge.fury.io/js/react.svg)](http://badge.fury.io/js/react)
+# [React](https://facebook.github.io/react/) [![Build Status](https://travis-ci.org/facebook/react.svg?branch=master)](https://travis-ci.org/facebook/react) [![npm version](https://badge.fury.io/js/react.svg)](http://badge.fury.io/js/react)
 
 React is a JavaScript library for building user interfaces.
 
@@ -8,7 +8,7 @@ React is a JavaScript library for building user interfaces.
 
 **NEW**! Check out our newest project [React Native](https://github.com/facebook/react-native), which uses React and JavaScript to create native mobile apps.
 
-[Learn how to use React in your own project.](https://facebook.github.io/react/docs/getting-started.html).
+[Learn how to use React in your own project](https://facebook.github.io/react/docs/getting-started.html).
 
 ## Examples
 
@@ -105,3 +105,6 @@ Examples provided in this repository and in the documentation are [separately li
 ### More…
 
 There's only so much we can cram in here. To read more about the community and guidelines for submitting pull requests, please read the [Contributing document](CONTRIBUTING.md).
+
+## Troubleshooting
+See the [Troubleshooting Guide](https://github.com/facebook/react/wiki/Troubleshooting) 

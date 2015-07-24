@@ -20,7 +20,7 @@ var getTestDocument;
 var testDocument;
 
 var UNMOUNT_INVARIANT_MESSAGE =
-  'Invariant Violation: ReactFullPageComponenthtml tried to unmount. ' +
+  'Invariant Violation: <html> tried to unmount. ' +
   'Because of cross-browser quirks it is impossible to unmount some ' +
   'top-level components (eg <html>, <head>, and <body>) reliably and ' +
   'efficiently. To fix this, have a single top-level component that ' +
@@ -53,7 +53,7 @@ describe('rendering React components at document', function() {
             </body>
           </html>
         );
-      }
+      },
     });
 
     var markup = React.renderToString(<Root />);
@@ -82,7 +82,7 @@ describe('rendering React components at document', function() {
             </body>
           </html>
         );
-      }
+      },
     });
 
     var markup = React.renderToString(<Root />);
@@ -112,7 +112,7 @@ describe('rendering React components at document', function() {
             </body>
           </html>
         );
-      }
+      },
     });
 
     var Component2 = React.createClass({
@@ -127,7 +127,7 @@ describe('rendering React components at document', function() {
             </body>
           </html>
         );
-      }
+      },
     });
 
     var markup = React.renderToString(<Component />);
@@ -160,7 +160,7 @@ describe('rendering React components at document', function() {
             </body>
           </html>
         );
-      }
+      },
     });
 
     var markup = React.renderToString(
@@ -188,7 +188,7 @@ describe('rendering React components at document', function() {
             </body>
           </html>
         );
-      }
+      },
     });
 
     var markup = React.renderToString(
@@ -231,7 +231,7 @@ describe('rendering React components at document', function() {
             </body>
           </html>
         );
-      }
+      },
     });
 
     expect(function() {

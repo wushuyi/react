@@ -32,7 +32,7 @@ var SELECTION_RESTORATION = {
   /**
    * @param {Selection} sel Selection information returned from `initialize`.
    */
-  close: ReactInputSelection.restoreSelection
+  close: ReactInputSelection.restoreSelection,
 };
 
 /**
@@ -58,7 +58,7 @@ var EVENT_SUPPRESSION = {
    */
   close: function(previouslyEnabled) {
     ReactBrowserEventEmitter.setEnabled(previouslyEnabled);
-  }
+  },
 };
 
 /**
@@ -78,7 +78,7 @@ var ON_DOM_READY_QUEUEING = {
    */
   close: function() {
     this.reactMountReady.notifyAll();
-  }
+  },
 };
 
 /**
@@ -89,7 +89,7 @@ var ON_DOM_READY_QUEUEING = {
 var TRANSACTION_WRAPPERS = [
   SELECTION_RESTORATION,
   EVENT_SUPPRESSION,
-  ON_DOM_READY_QUEUEING
+  ON_DOM_READY_QUEUEING,
 ];
 
 /**
@@ -122,7 +122,7 @@ var Mixin = {
    * @see Transaction
    * @abstract
    * @final
-   * @return {array<object>} List of operation wrap proceedures.
+   * @return {array<object>} List of operation wrap procedures.
    *   TODO: convert to array<TransactionWrapper>
    */
   getTransactionWrappers: function() {
@@ -138,12 +138,12 @@ var Mixin = {
 
   /**
    * `PooledClass` looks for this, and will invoke this before allowing this
-   * instance to be resused.
+   * instance to be reused.
    */
   destructor: function() {
     CallbackQueue.release(this.reactMountReady);
     this.reactMountReady = null;
-  }
+  },
 };
 
 

@@ -12,16 +12,14 @@
 'use strict';
 
 var ReactComponent = require('ReactComponent');
-var ReactCurrentOwner = require('ReactCurrentOwner');
 var ReactElement = require('ReactElement');
 var ReactErrorUtils = require('ReactErrorUtils');
-var ReactInstanceMap = require('ReactInstanceMap');
-var ReactLifeCycle = require('ReactLifeCycle');
 var ReactPropTypeLocations = require('ReactPropTypeLocations');
 var ReactPropTypeLocationNames = require('ReactPropTypeLocationNames');
-var ReactUpdateQueue = require('ReactUpdateQueue');
+var ReactNoopUpdateQueue = require('ReactNoopUpdateQueue');
 
 var assign = require('Object.assign');
+var emptyObject = require('emptyObject');
 var invariant = require('invariant');
 var keyMirror = require('keyMirror');
 var keyOf = require('keyOf');
@@ -51,11 +49,23 @@ var SpecPolicy = keyMirror({
    * objects. We try to merge the keys of the return values of all the mixed in
    * functions. If there is a key conflict we throw.
    */
-  DEFINE_MANY_MERGED: null
+  DEFINE_MANY_MERGED: null,
 });
 
 
 var injectedMixins = [];
+
+var warnedSetProps = false;
+function warnSetProps() {
+  if (!warnedSetProps) {
+    warnedSetProps = true;
+    warning(
+      false,
+      'setProps(...) and replaceProps(...) are deprecated. ' +
+      'Instead, call React.render again at the top level.'
+    );
+  }
+}
 
 /**
  * Composite components are higher-level components that compose other composite
@@ -302,7 +312,7 @@ var ReactClassInterface = {
    * @internal
    * @overridable
    */
-  updateComponent: SpecPolicy.OVERRIDE_BASE
+  updateComponent: SpecPolicy.OVERRIDE_BASE,
 
 };
 
@@ -384,7 +394,7 @@ var RESERVED_SPEC_KEYS = {
   },
   statics: function(Constructor, statics) {
     mixStaticSpecIntoComponent(Constructor, statics);
-  }
+  },
 };
 
 function validateTypeDef(Constructor, typeDef, location) {
@@ -704,23 +714,6 @@ function bindAutoBindMethods(component) {
   }
 }
 
-var typeDeprecationDescriptor = {
-  enumerable: false,
-  get: function() {
-    var displayName = this.displayName || this.name || 'Component';
-    warning(
-      false,
-      '%s.type is deprecated. Use %s directly to access the class.',
-      displayName,
-      displayName
-    );
-    Object.defineProperty(this, 'type', {
-      value: this
-    });
-    return this;
-  }
-};
-
 /**
  * Add more to the ReactClass base class. These are all legacy features and
  * therefore not already part of the modern ReactComponent.
@@ -732,9 +725,9 @@ var ReactClassMixin = {
    * type signature and the only use case for this, is to avoid that.
    */
   replaceState: function(newState, callback) {
-    ReactUpdateQueue.enqueueReplaceState(this, newState);
+    this.updater.enqueueReplaceState(this, newState);
     if (callback) {
-      ReactUpdateQueue.enqueueCallback(this, callback);
+      this.updater.enqueueCallback(this, callback);
     }
   },
 
@@ -745,27 +738,7 @@ var ReactClassMixin = {
    * @final
    */
   isMounted: function() {
-    if (__DEV__) {
-      var owner = ReactCurrentOwner.current;
-      if (owner !== null) {
-        warning(
-          owner._warnedAboutRefsInRender,
-          '%s is accessing isMounted inside its render() function. ' +
-          'render() should be a pure function of props and state. It should ' +
-          'never access something that requires stale data from the previous ' +
-          'render, such as refs. Move this logic to componentDidMount and ' +
-          'componentDidUpdate instead.',
-          owner.getName() || 'A component'
-        );
-        owner._warnedAboutRefsInRender = true;
-      }
-    }
-    var internalInstance = ReactInstanceMap.get(this);
-    if (internalInstance) {
-      return internalInstance !== ReactLifeCycle.currentlyMountingInstance;
-    } else {
-      return false;
-    }
+    return this.updater.isMounted(this);
   },
 
   /**
@@ -778,9 +751,12 @@ var ReactClassMixin = {
    * @deprecated
    */
   setProps: function(partialProps, callback) {
-    ReactUpdateQueue.enqueueSetProps(this, partialProps);
+    if (__DEV__) {
+      warnSetProps();
+    }
+    this.updater.enqueueSetProps(this, partialProps);
     if (callback) {
-      ReactUpdateQueue.enqueueCallback(this, callback);
+      this.updater.enqueueCallback(this, callback);
     }
   },
 
@@ -794,11 +770,14 @@ var ReactClassMixin = {
    * @deprecated
    */
   replaceProps: function(newProps, callback) {
-    ReactUpdateQueue.enqueueReplaceProps(this, newProps);
-    if (callback) {
-      ReactUpdateQueue.enqueueCallback(this, callback);
+    if (__DEV__) {
+      warnSetProps();
     }
-  }
+    this.updater.enqueueReplaceProps(this, newProps);
+    if (callback) {
+      this.updater.enqueueCallback(this, callback);
+    }
+  },
 };
 
 var ReactClassComponent = function() {};
@@ -823,7 +802,7 @@ var ReactClass = {
    * @public
    */
   createClass: function(spec) {
-    var Constructor = function(props, context) {
+    var Constructor = function(props, context, updater) {
       // This constructor is overridden by mocks. The argument is used
       // by mocks to assert on what gets mounted.
 
@@ -842,6 +821,9 @@ var ReactClass = {
 
       this.props = props;
       this.context = context;
+      this.refs = emptyObject;
+      this.updater = updater || ReactNoopUpdateQueue;
+
       this.state = null;
 
       // ReactClasses doesn't have constructors. Instead, they use the
@@ -906,6 +888,12 @@ var ReactClass = {
         'expected to return a value.',
         spec.displayName || 'A component'
       );
+      warning(
+        !Constructor.prototype.componentWillRecieveProps,
+        '%s has a method called ' +
+        'componentWillRecieveProps(). Did you mean componentWillReceiveProps()?',
+        spec.displayName || 'A component'
+      );
     }
 
     // Reduce time spent doing lookups by setting these on the prototype.
@@ -915,24 +903,14 @@ var ReactClass = {
       }
     }
 
-    // Legacy hook
-    Constructor.type = Constructor;
-    if (__DEV__) {
-      try {
-        Object.defineProperty(Constructor, 'type', typeDeprecationDescriptor);
-      } catch (x) {
-        // IE will fail on defineProperty (es5-shim/sham too)
-      }
-    }
-
     return Constructor;
   },
 
   injection: {
     injectMixin: function(mixin) {
       injectedMixins.push(mixin);
-    }
-  }
+    },
+  },
 
 };
 

@@ -27,7 +27,7 @@ var eventTypes = {
   select: {
     phasedRegistrationNames: {
       bubbled: keyOf({onSelect: null}),
-      captured: keyOf({onSelectCapture: null})
+      captured: keyOf({onSelectCapture: null}),
     },
     dependencies: [
       topLevelTypes.topBlur,
@@ -36,9 +36,9 @@ var eventTypes = {
       topLevelTypes.topKeyDown,
       topLevelTypes.topMouseDown,
       topLevelTypes.topMouseUp,
-      topLevelTypes.topSelectionChange
-    ]
-  }
+      topLevelTypes.topSelectionChange,
+    ],
+  },
 };
 
 var activeElement = null;
@@ -58,14 +58,14 @@ var ON_SELECT_KEY = keyOf({onSelect: null});
  * two identical selections on the same node will return identical objects.
  *
  * @param {DOMElement} node
- * @param {object}
+ * @return {object}
  */
 function getSelection(node) {
   if ('selectionStart' in node &&
       ReactInputSelection.hasSelectionCapabilities(node)) {
     return {
       start: node.selectionStart,
-      end: node.selectionEnd
+      end: node.selectionEnd,
     };
   } else if (window.getSelection) {
     var selection = window.getSelection();
@@ -73,7 +73,7 @@ function getSelection(node) {
       anchorNode: selection.anchorNode,
       anchorOffset: selection.anchorOffset,
       focusNode: selection.focusNode,
-      focusOffset: selection.focusOffset
+      focusOffset: selection.focusOffset,
     };
   } else if (document.selection) {
     var range = document.selection.createRange();
@@ -81,7 +81,7 @@ function getSelection(node) {
       parentElement: range.parentElement(),
       text: range.text,
       top: range.boundingTop,
-      left: range.boundingLeft
+      left: range.boundingLeft,
     };
   }
 }
@@ -92,7 +92,7 @@ function getSelection(node) {
  * @param {object} nativeEvent
  * @return {?SyntheticEvent}
  */
-function constructSelectEvent(nativeEvent) {
+function constructSelectEvent(nativeEvent, nativeEventTarget) {
   // Ensure we have the right element, and that the user is not dragging a
   // selection (this matches native `select` event behavior). In HTML5, select
   // fires only on input and textarea thus if there's no focused element we
@@ -111,7 +111,8 @@ function constructSelectEvent(nativeEvent) {
     var syntheticEvent = SyntheticEvent.getPooled(
       eventTypes.select,
       activeElementID,
-      nativeEvent
+      nativeEvent,
+      nativeEventTarget
     );
 
     syntheticEvent.type = 'select';
@@ -155,8 +156,8 @@ var SelectEventPlugin = {
       topLevelType,
       topLevelTarget,
       topLevelTargetID,
-      nativeEvent) {
-
+      nativeEvent,
+      nativeEventTarget) {
     if (!hasListener) {
       return null;
     }
@@ -185,7 +186,7 @@ var SelectEventPlugin = {
       case topLevelTypes.topContextMenu:
       case topLevelTypes.topMouseUp:
         mouseDown = false;
-        return constructSelectEvent(nativeEvent);
+        return constructSelectEvent(nativeEvent, nativeEventTarget);
 
       // Chrome and IE fire non-standard event when selection is changed (and
       // sometimes when it hasn't).
@@ -196,7 +197,7 @@ var SelectEventPlugin = {
       case topLevelTypes.topSelectionChange:
       case topLevelTypes.topKeyDown:
       case topLevelTypes.topKeyUp:
-        return constructSelectEvent(nativeEvent);
+        return constructSelectEvent(nativeEvent, nativeEventTarget);
     }
 
     return null;
@@ -206,7 +207,7 @@ var SelectEventPlugin = {
     if (registrationName === ON_SELECT_KEY) {
       hasListener = true;
     }
-  }
+  },
 };
 
 module.exports = SelectEventPlugin;

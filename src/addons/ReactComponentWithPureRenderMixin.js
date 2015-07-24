@@ -6,8 +6,8 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  *
-* @providesModule ReactComponentWithPureRenderMixin
-*/
+ * @providesModule ReactComponentWithPureRenderMixin
+ */
 
 'use strict';
 
@@ -40,7 +40,7 @@ var shallowCompare = require('shallowCompare');
 var ReactComponentWithPureRenderMixin = {
   shouldComponentUpdate: function(nextProps, nextState) {
     return shallowCompare(this, nextProps, nextState);
-  }
+  },
 };
 
 module.exports = ReactComponentWithPureRenderMixin;

@@ -14,7 +14,6 @@
 var React;
 var ReactFragment;
 var ReactTestUtils;
-var reactComponentExpect;
 var ReactMount;
 
 describe('ReactIdentity', function() {
@@ -24,14 +23,13 @@ describe('ReactIdentity', function() {
     React = require('React');
     ReactFragment = require('ReactFragment');
     ReactTestUtils = require('ReactTestUtils');
-    reactComponentExpect = require('reactComponentExpect');
     ReactMount = require('ReactMount');
   });
 
   var idExp = /^\.[^.]+(.*)$/;
-  function checkId(child, expectedId) {
+  function checkID(child, expectedID) {
     var actual = idExp.exec(ReactMount.getID(child));
-    var expected = idExp.exec(expectedId);
+    var expected = idExp.exec(expectedID);
     expect(actual).toBeTruthy();
     expect(expected).toBeTruthy();
     expect(actual[1]).toEqual(expected[1]);
@@ -46,15 +44,15 @@ describe('ReactIdentity', function() {
       <div>
         {frag({
           first: <div />,
-          second: <div />
+          second: <div />,
         })}
       </div>;
 
     instance = React.render(instance, document.createElement('div'));
     var node = React.findDOMNode(instance);
-    reactComponentExpect(instance).toBeDOMComponentWithChildCount(2);
-    checkId(node.childNodes[0], '.0.$first:0');
-    checkId(node.childNodes[1], '.0.$second:0');
+    expect(node.childNodes.length).toBe(2);
+    checkID(node.childNodes[0], '.0.$first:0');
+    checkID(node.childNodes[1], '.0.$second:0');
   });
 
   it('should allow key property to express identity', function() {
@@ -68,11 +66,11 @@ describe('ReactIdentity', function() {
 
     instance = React.render(instance, document.createElement('div'));
     var node = React.findDOMNode(instance);
-    reactComponentExpect(instance).toBeDOMComponentWithChildCount(4);
-    checkId(node.childNodes[0], '.0.$apple');
-    checkId(node.childNodes[1], '.0.$banana');
-    checkId(node.childNodes[2], '.0.$0');
-    checkId(node.childNodes[3], '.0.$123');
+    expect(node.childNodes.length).toBe(4);
+    checkID(node.childNodes[0], '.0.$apple');
+    checkID(node.childNodes[1], '.0.$banana');
+    checkID(node.childNodes[2], '.0.$0');
+    checkID(node.childNodes[3], '.0.$123');
   });
 
   it('should use instance identity', function() {
@@ -80,7 +78,7 @@ describe('ReactIdentity', function() {
     var Wrapper = React.createClass({
       render: function() {
         return <a key="i_get_overwritten">{this.props.children}</a>;
-      }
+      },
     });
 
     var instance =
@@ -92,14 +90,14 @@ describe('ReactIdentity', function() {
 
     instance = React.render(instance, document.createElement('div'));
     var node = React.findDOMNode(instance);
-    reactComponentExpect(instance).toBeDOMComponentWithChildCount(3);
+    expect(node.childNodes.length).toBe(3);
 
-    checkId(node.childNodes[0], '.0.$wrap1');
-    checkId(node.childNodes[0].firstChild, '.0.$wrap1.$squirrel');
-    checkId(node.childNodes[1], '.0.$wrap2');
-    checkId(node.childNodes[1].firstChild, '.0.$wrap2.$bunny');
-    checkId(node.childNodes[2], '.0.2');
-    checkId(node.childNodes[2].firstChild, '.0.2.$chipmunk');
+    checkID(node.childNodes[0], '.0.$wrap1');
+    checkID(node.childNodes[0].firstChild, '.0.$wrap1.$squirrel');
+    checkID(node.childNodes[1], '.0.$wrap2');
+    checkID(node.childNodes[1].firstChild, '.0.$wrap2.$bunny');
+    checkID(node.childNodes[2], '.0.2');
+    checkID(node.childNodes[2].firstChild, '.0.2.$chipmunk');
   });
 
   function renderAComponentWithKeyIntoContainer(key, container) {
@@ -107,13 +105,13 @@ describe('ReactIdentity', function() {
     var Wrapper = React.createClass({
 
       render: function() {
-        var span1 = <span ref="span1" key={key} />;
-        var span2 = <span ref="span2" />;
+        var s1 = <span ref="span1" key={key} />;
+        var s2 = <span ref="span2" />;
 
         var map = {};
-        map[key] = span2;
-        return <div>{[span1, frag(map)]}</div>;
-      }
+        map[key] = s2;
+        return <div>{[s1, frag(map)]}</div>;
+      },
 
     });
 
@@ -126,13 +124,16 @@ describe('ReactIdentity', function() {
 
     key = key.replace(/=/g, '=0');
 
-    checkId(React.findDOMNode(span1), '.0.$' + key);
-    checkId(React.findDOMNode(span2), '.0.1:$' + key + ':0');
+    checkID(React.findDOMNode(span1), '.0.$' + key);
+    checkID(React.findDOMNode(span2), '.0.1:$' + key + ':0');
   }
 
   it('should allow any character as a key, in a detached parent', function() {
     var detachedContainer = document.createElement('div');
-    renderAComponentWithKeyIntoContainer("<'WEIRD/&\\key'>", detachedContainer);
+    renderAComponentWithKeyIntoContainer(
+      "<'WEIRD/&\\key'>",
+      detachedContainer
+    );
   });
 
   it('should allow any character as a key, in an attached parent', function() {
@@ -141,7 +142,10 @@ describe('ReactIdentity', function() {
     var attachedContainer = document.createElement('div');
     document.body.appendChild(attachedContainer);
 
-    renderAComponentWithKeyIntoContainer("<'WEIRD/&\\key'>", attachedContainer);
+    renderAComponentWithKeyIntoContainer(
+      "<'WEIRD/&\\key'>",
+      attachedContainer
+    );
 
     document.body.removeChild(attachedContainer);
   });
@@ -175,14 +179,14 @@ describe('ReactIdentity', function() {
             {this.props.children[1]}
           </div>
         );
-      }
+      },
     });
 
     var TestContainer = React.createClass({
 
       render: function() {
         return <TestComponent>{instance0}{instance1}</TestComponent>;
-      }
+      },
 
     });
 
@@ -207,7 +211,7 @@ describe('ReactIdentity', function() {
             {this.props.children[1]}
           </div>
         );
-      }
+      },
     });
 
     var TestContainer = React.createClass({
@@ -218,7 +222,7 @@ describe('ReactIdentity', function() {
             <TestComponent>{instance0}{instance1}</TestComponent>
           </div>
         );
-      }
+      },
 
     });
 
@@ -233,7 +237,7 @@ describe('ReactIdentity', function() {
     var TestComponent = React.createClass({
       render: function() {
         return <div>{this.props.children}<span /></div>;
-      }
+      },
     });
 
     var TestContainer = React.createClass({
@@ -245,7 +249,7 @@ describe('ReactIdentity', function() {
             {'second'}
           </TestComponent>
         );
-      }
+      },
 
     });
 
@@ -261,7 +265,7 @@ describe('ReactIdentity', function() {
     var TestComponent = React.createClass({
       render: function() {
         return <div>{this.props.children}</div>;
-      }
+      },
     });
 
     var TestContainer = React.createClass({
@@ -281,7 +285,7 @@ describe('ReactIdentity', function() {
             {this.state.swapped ? this.props.first : this.props.second}
           </TestComponent>
         );
-      }
+      },
 
     });
 

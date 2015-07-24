@@ -179,6 +179,21 @@ describe('DOMPropertyOperations', function() {
 
   });
 
+  describe('createMarkupForProperty', function() {
+
+    it('should allow custom properties on web components', function() {
+      expect(DOMPropertyOperations.createMarkupForCustomAttribute(
+        'awesomeness',
+        5
+      )).toBe('awesomeness="5"');
+
+      expect(DOMPropertyOperations.createMarkupForCustomAttribute(
+        'dev',
+        'jim'
+      )).toBe('dev="jim"');
+    });
+  });
+
   describe('setValueForProperty', function() {
     var stubNode;
 
@@ -212,7 +227,11 @@ describe('DOMPropertyOperations', function() {
     it('should convert attribute values to string first', function() {
       // Browsers default to this behavior, but some test environments do not.
       // This ensures that we have consistent behavior.
-      var obj = {toString: function() { return '<html>'; }};
+      var obj = {
+        toString: function() {
+          return '<html>';
+        },
+      };
       DOMPropertyOperations.setValueForProperty(stubNode, 'role', obj);
       expect(stubNode.getAttribute('role')).toBe('<html>');
     });
@@ -247,8 +266,8 @@ describe('DOMPropertyOperations', function() {
       DOMProperty.injection.injectDOMPropertyConfig({
         Properties: {foobar: null},
         DOMMutationMethods: {
-          foobar: foobarSetter
-        }
+          foobar: foobarSetter,
+        },
       });
 
       DOMPropertyOperations.setValueForProperty(
@@ -286,8 +305,8 @@ describe('DOMPropertyOperations', function() {
       DOMProperty.injection.injectDOMPropertyConfig({
         Properties: {foobar: DOMProperty.injection.MUST_USE_PROPERTY},
         DOMPropertyNames: {
-          foobar: 'className'
-        }
+          foobar: 'className',
+        },
       });
 
       DOMPropertyOperations.setValueForProperty(
@@ -328,7 +347,7 @@ describe('DOMPropertyOperations', function() {
         isCustomAttribute: function(name) {
           return name.indexOf('foo-') === 0;
         },
-        Properties: {foobar: null}
+        Properties: {foobar: null},
       });
 
       // Ensure old attributes still work

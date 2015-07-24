@@ -22,10 +22,6 @@ describe('ReactChildren', function() {
     ReactFragment = require('ReactFragment');
   });
 
-  function frag(obj) {
-    return ReactFragment.create(obj);
-  }
-
   function nthChild(mappedChildren, n) {
     var result = null;
     ReactChildren.forEach(mappedChildren, function(child, index) {
@@ -79,7 +75,7 @@ describe('ReactChildren', function() {
       return kid;
     });
 
-    var simpleKid = <span />;
+    var simpleKid = <span key="simple" />;
     var instance = <div>{[simpleKid]}</div>;
     ReactChildren.forEach(instance.props.children, callback);
     expect(callback).toHaveBeenCalledWith(simpleKid, 0);
@@ -87,6 +83,7 @@ describe('ReactChildren', function() {
     var mappedChildren = ReactChildren.map(instance.props.children, callback);
     expect(callback).toHaveBeenCalledWith(simpleKid, 0);
     expect(nthChild(mappedChildren, 0)).toBe(simpleKid);
+
   });
 
   it('should pass key to returned component', function() {
@@ -175,7 +172,7 @@ describe('ReactChildren', function() {
       keyOfNthChild(mappedChildren, 1),
       keyOfNthChild(mappedChildren, 2),
       keyOfNthChild(mappedChildren, 3),
-      keyOfNthChild(mappedChildren, 4)
+      keyOfNthChild(mappedChildren, 4),
     ]).toEqual(
       ['.$keyZero', '.1', '.$keyTwo', '.3', '.$keyFour']
     );
@@ -227,11 +224,13 @@ describe('ReactChildren', function() {
 
     var instance = (
       <div>{
-        [frag({
-          firstHalfKey: [zero, one, two],
-          secondHalfKey: [three, four],
-          keyFive: five
-        })]
+        [
+          ReactFragment.create({
+            firstHalfKey: [zero, one, two],
+            secondHalfKey: [three, four],
+            keyFive: five,
+          }),
+        ]
       }</div>
     );
 
@@ -254,14 +253,14 @@ describe('ReactChildren', function() {
       keyOfNthChild(mappedChildren, 2),
       keyOfNthChild(mappedChildren, 3),
       keyOfNthChild(mappedChildren, 4),
-      keyOfNthChild(mappedChildren, 5)
+      keyOfNthChild(mappedChildren, 5),
     ]).toEqual([
       '.0:$firstHalfKey:0:$keyZero',
       '.0:$firstHalfKey:0:1',
       '.0:$firstHalfKey:0:$keyTwo',
       '.0:$secondHalfKey:0:0',
       '.0:$secondHalfKey:0:$keyFour',
-      '.0:$keyFive:$keyFiveInner'
+      '.0:$keyFive:$keyFiveInner',
     ]);
 
     expect(callback).toHaveBeenCalledWith(zero, 0);
@@ -311,7 +310,7 @@ describe('ReactChildren', function() {
 
     var expectedRemappedForcedKeys = [
       '.$=1$keyZero:$giraffe',
-      '.$=1$keyOne:0'
+      '.$=1$keyOne:0',
     ];
     var remappedChildrenForcedKeys =
       ReactChildren.map(mappedChildrenForcedKeys, mapFn);
@@ -345,7 +344,9 @@ describe('ReactChildren', function() {
     var zero = <div key="something"/>;
     var one = <span key="something" />;
 
-    var mapFn = function(component) { return component; };
+    var mapFn = function(component) {
+      return component;
+    };
     var instance = (
       <div>{zero}{one}</div>
     );
@@ -410,11 +411,13 @@ describe('ReactChildren', function() {
 
     var instance = (
       <div>{
-        [frag({
-          firstHalfKey: [zero, one, two],
-          secondHalfKey: [three, four],
-          keyFive: five
-        })]
+        [
+          ReactFragment.create({
+            firstHalfKey: [zero, one, two],
+            secondHalfKey: [three, four],
+            keyFive: five,
+          }),
+        ]
       }</div>
     );
     var numberOfChildren = ReactChildren.count(instance.props.children);
@@ -438,7 +441,7 @@ describe('ReactChildren', function() {
       return c;
     });
     for (var key in frag) {
-      frag[key];
+      void frag[key];
       break;
     }
     expect(console.error.calls.length).toBe(1);
@@ -447,8 +450,8 @@ describe('ReactChildren', function() {
     var frag2 = ReactChildren.map([child, child], function(c) {
       return c;
     });
-    for (var key in frag2) {
-      frag2[key] = 123;
+    for (var key2 in frag2) {
+      frag2[key2] = 123;
       break;
     }
     expect(console.error.calls.length).toBe(2);

@@ -54,7 +54,7 @@ var HTMLDOMPropertyConfig = {
     alt: null,
     async: HAS_BOOLEAN_VALUE,
     autoComplete: null,
-    // autoFocus is polyfilled/normalized by AutoFocusMixin
+    // autoFocus is polyfilled/normalized by AutoFocusUtils
     // autoFocus: HAS_BOOLEAN_VALUE,
     autoPlay: HAS_BOOLEAN_VALUE,
     capture: MUST_USE_ATTRIBUTE | HAS_BOOLEAN_VALUE,
@@ -103,6 +103,8 @@ var HTMLDOMPropertyConfig = {
     httpEquiv: null,
     icon: null,
     id: MUST_USE_PROPERTY,
+    inputMode: MUST_USE_ATTRIBUTE,
+    is: MUST_USE_ATTRIBUTE,
     keyParams: MUST_USE_ATTRIBUTE,
     keyType: MUST_USE_ATTRIBUTE,
     label: null,
@@ -162,6 +164,7 @@ var HTMLDOMPropertyConfig = {
     value: MUST_USE_PROPERTY | HAS_SIDE_EFFECTS,
     width: MUST_USE_ATTRIBUTE,
     wmode: MUST_USE_ATTRIBUTE,
+    wrap: null,
 
     /**
      * Non-standard Properties
@@ -182,14 +185,17 @@ var HTMLDOMPropertyConfig = {
     itemRef: MUST_USE_ATTRIBUTE,
     // property is supported for OpenGraph in meta tags.
     property: null,
+    // IE-only attribute that specifies security restrictions on an iframe
+    // as an alternative to the sandbox attribute on IE<10
+    security: MUST_USE_ATTRIBUTE,
     // IE-only attribute that controls focus behavior
-    unselectable: MUST_USE_ATTRIBUTE
+    unselectable: MUST_USE_ATTRIBUTE,
   },
   DOMAttributeNames: {
     acceptCharset: 'accept-charset',
     className: 'class',
     htmlFor: 'for',
-    httpEquiv: 'http-equiv'
+    httpEquiv: 'http-equiv',
   },
   DOMPropertyNames: {
     autoCapitalize: 'autocapitalize',
@@ -204,8 +210,8 @@ var HTMLDOMPropertyConfig = {
     radioGroup: 'radiogroup',
     spellCheck: 'spellcheck',
     srcDoc: 'srcdoc',
-    srcSet: 'srcset'
-  }
+    srcSet: 'srcset',
+  },
 };
 
 module.exports = HTMLDOMPropertyConfig;

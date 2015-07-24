@@ -13,10 +13,8 @@
 
 var EventPluginHub;
 var EventConstants;
-var EventPropagators;
 var ReactInstanceHandles;
 var ResponderEventPlugin;
-var SyntheticEvent;
 var EventPluginUtils;
 
 var GRANDPARENT_ID = '.0';
@@ -25,7 +23,6 @@ var CHILD_ID = '.0.0.0';
 var CHILD_ID2 = '.0.0.1';
 
 var topLevelTypes;
-var responderEventTypes;
 
 var touch = function(nodeHandle, i) {
   return {target: nodeHandle, identifier: i};
@@ -42,7 +39,7 @@ var touchEvent = function(nodeHandle, touches, changedTouches) {
   return {
     target: nodeHandle,
     changedTouches: changedTouches,
-    touches: touches
+    touches: touches,
   };
 };
 
@@ -70,7 +67,7 @@ var antiSubsequence = function(arr, indices) {
  * @param allTouchHandles
  */
 var _touchConfig =
-  function(topType, targetNodeHandle, allTouchHandles, changedIndices) {
+  function(topType, targetNodeHandle, allTouchHandles, changedIndices, eventTarget) {
   var allTouchObjects = allTouchHandles.map(touch);
   var changedTouchObjects = subsequence(allTouchObjects, changedIndices);
   var activeTouchObjects =
@@ -115,7 +112,8 @@ var startConfig = function(nodeHandle, allTouchHandles, changedIndices) {
     topLevelTypes.topTouchStart,
     nodeHandle,
     allTouchHandles,
-    changedIndices
+    changedIndices,
+    nodeHandle
   );
 };
 
@@ -127,7 +125,8 @@ var moveConfig = function(nodeHandle, allTouchHandles, changedIndices) {
     topLevelTypes.topTouchMove,
     nodeHandle,
     allTouchHandles,
-    changedIndices
+    changedIndices,
+    nodeHandle
   );
 };
 
@@ -139,7 +138,8 @@ var endConfig = function(nodeHandle, allTouchHandles, changedIndices) {
     topLevelTypes.topTouchEnd,
     nodeHandle,
     allTouchHandles,
-    changedIndices
+    changedIndices,
+    nodeHandle
   );
 };
 
@@ -180,7 +180,7 @@ var oneEventLoopTestConfig = function(readableIDToID) {
     responderTerminationRequest: {},
 
     // Non-negotiation
-    responderReject:      {}, // These do not bubble capture.
+    responderReject:    {}, // These do not bubble capture.
     responderGrant:     {},
     responderStart:     {},
     responderMove:      {},
@@ -206,7 +206,8 @@ var oneEventLoopTestConfig = function(readableIDToID) {
 };
 
 /**
- * @param {object} sequence See `oneEventLoopTestConfig`.
+ * @param {object} eventTestConfig
+ * @param {object} readableIDToID
  */
 var registerTestHandlers = function(eventTestConfig, readableIDToID) {
   var runs = {dispatchCount: 0};
@@ -218,23 +219,29 @@ var registerTestHandlers = function(eventTestConfig, readableIDToID) {
       '\nFor event test config:\n' + JSON.stringify(eventTestConfig) + '\n'
     );
   };
+  /*eslint-disable no-loop-func, no-shadow */
   var registerOneEventType = function(registrationName, eventTypeTestConfig) {
     for (var readableID in eventTypeTestConfig) {
       var nodeConfig = eventTypeTestConfig[readableID];
       var id = readableIDToID[readableID];
       var handler = nodeConfig.order === NA ? neverFire.bind(null, readableID, registrationName) :
-        function(readableID, registrationName, nodeConfig, e) {
+        // We partially apply readableID and nodeConfig, as they change in the
+        // parent closure across iterations.
+        function(readableID, nodeConfig, e) {
           expect(
             readableID + '->' + registrationName + ' index:' + runs.dispatchCount++
           ).toBe(
             readableID + '->' + registrationName + ' index:' + nodeConfig.order
           );
-          nodeConfig.assertEvent && nodeConfig.assertEvent(e);
+          if (nodeConfig.assertEvent) {
+            nodeConfig.assertEvent(e);
+          }
           return nodeConfig.returnVal;
-        }.bind(null, readableID, registrationName, nodeConfig);
+        }.bind(null, readableID, nodeConfig);
       EventPluginHub.putListener(id, registrationName, handler);
     }
   };
+  /*eslint-enable no-loop-func, no-shadow */
   for (var eventName in eventTestConfig) {
     var oneEventTypeTestConfig = eventTestConfig[eventName];
     var hasTwoPhase = !!oneEventTypeTestConfig.bubbled;
@@ -286,7 +293,8 @@ var run = function(config, hierarchyConfig, nativeEventConfig) {
     nativeEventConfig.topLevelType,
     nativeEventConfig.target,
     nativeEventConfig.targetID,
-    nativeEventConfig.nativeEvent
+    nativeEventConfig.nativeEvent,
+    nativeEventConfig.target
   );
 
   // At this point the negotiation events have been dispatched as part of the
@@ -322,10 +330,8 @@ describe('ResponderEventPlugin', function() {
     EventConstants = require('EventConstants');
     EventPluginHub = require('EventPluginHub');
     EventPluginUtils = require('EventPluginUtils');
-    EventPropagators = require('EventPropagators');
     ReactInstanceHandles = require('ReactInstanceHandles');
     ResponderEventPlugin = require('ResponderEventPlugin');
-    SyntheticEvent = require('SyntheticEvent');
 
     EventPluginHub.injection.injectInstanceHandle(ReactInstanceHandles);
 
@@ -337,21 +343,20 @@ describe('ResponderEventPlugin', function() {
       },
       getID: function(nodeHandle) {
         return nodeHandle;
-      }
+      },
     });
 
     topLevelTypes = EventConstants.topLevelTypes;
-    responderEventTypes = ResponderEventPlugin.eventTypes;
   });
 
   it('should do nothing when no one wants to respond', function() {
     var config = oneEventLoopTestConfig(three);
     config.startShouldSetResponder.captured.grandParent = {order: 0, returnVal: false};
-    config.startShouldSetResponder.captured.parent =      {order: 1, returnVal: false};
-    config.startShouldSetResponder.captured.child =       {order: 2, returnVal: false};
-    config.startShouldSetResponder.bubbled.child =        {order: 3, returnVal: false};
-    config.startShouldSetResponder.bubbled.parent =       {order: 4, returnVal: false};
-    config.startShouldSetResponder.bubbled.grandParent =  {order: 5, returnVal: false};
+    config.startShouldSetResponder.captured.parent = {order: 1, returnVal: false};
+    config.startShouldSetResponder.captured.child = {order: 2, returnVal: false};
+    config.startShouldSetResponder.bubbled.child = {order: 3, returnVal: false};
+    config.startShouldSetResponder.bubbled.parent = {order: 4, returnVal: false};
+    config.startShouldSetResponder.bubbled.grandParent = {order: 5, returnVal: false};
     run(config, three, startConfig(three.child, [three.child], [0]));
     expect(ResponderEventPlugin.getResponderID()).toBe(null);
 
@@ -913,7 +918,7 @@ describe('ResponderEventPlugin', function() {
       topLevelType: topLevelTypes.topScroll,
       target: three.parent,
       targetID: three.parent,
-      nativeEvent: {}
+      nativeEvent: {},
     });
     expect(ResponderEventPlugin.getResponderID()).toBe(three.child);
 
@@ -931,7 +936,7 @@ describe('ResponderEventPlugin', function() {
       topLevelType: topLevelTypes.topScroll,
       target: three.parent,
       targetID: three.parent,
-      nativeEvent: {}
+      nativeEvent: {},
     });
     expect(ResponderEventPlugin.getResponderID()).toBe(three.parent);
 

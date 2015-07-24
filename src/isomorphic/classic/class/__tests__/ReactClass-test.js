@@ -37,51 +37,22 @@ describe('ReactClass-spec', function() {
     var TestComponent = React.createClass({
       render: function() {
         return <div />;
-      }
+      },
     });
 
     expect(TestComponent.displayName)
       .toBe('TestComponent');
   });
 
-  it('should warn when accessing .type on a React class', function() {
-    var TestComponent = React.createClass({
-      render: function() {
-        return <div />;
-      }
-    });
-    var SecondTestComponent = React.createClass({
-      render: function() {
-        return <div />;
-      }
-    });
-    expect(TestComponent.type).toBe(TestComponent);
-    expect(console.error.argsForCall.length).toBe(1);
-    expect(console.error.argsForCall[0][0]).toBe(
-      'Warning: TestComponent.type is deprecated. Use TestComponent ' +
-      'directly to access the class.'
-    );
-    // Warn once per class
-    expect(SecondTestComponent.type).toBe(SecondTestComponent);
-    expect(console.error.argsForCall.length).toBe(2);
-    expect(console.error.argsForCall[1][0]).toBe(
-      'Warning: SecondTestComponent.type is deprecated. Use ' +
-      'SecondTestComponent directly to access the class.'
-    );
-    // Not again
-    expect(TestComponent.type).toBe(TestComponent);
-    expect(console.error.argsForCall.length).toBe(2);
-  });
-
   it('should copy prop types onto the Constructor', function() {
     var propValidator = mocks.getMockFunction();
     var TestComponent = React.createClass({
       propTypes: {
-        value: propValidator
+        value: propValidator,
       },
       render: function() {
         return <div />;
-      }
+      },
     });
 
     expect(TestComponent.propTypes).toBeDefined();
@@ -97,11 +68,11 @@ describe('ReactClass-spec', function() {
       React.createClass({
         displayName: 'Component',
         propTypes: {
-          prop: null
+          prop: null,
         },
         render: function() {
           return <span>{this.props.prop}</span>;
-        }
+        },
       });
       expect(console.error.mock.calls.length).toBe(1);
       expect(console.error.mock.calls[0][0]).toBe(
@@ -120,11 +91,11 @@ describe('ReactClass-spec', function() {
       React.createClass({
         displayName: 'Component',
         contextTypes: {
-          prop: null
+          prop: null,
         },
         render: function() {
           return <span>{this.props.prop}</span>;
-        }
+        },
       });
       expect(console.error.mock.calls.length).toBe(1);
       expect(console.error.mock.calls[0][0]).toBe(
@@ -143,11 +114,11 @@ describe('ReactClass-spec', function() {
       React.createClass({
         displayName: 'Component',
         childContextTypes: {
-          prop: null
+          prop: null,
         },
         render: function() {
           return <span>{this.props.prop}</span>;
-        }
+        },
       });
       expect(console.error.mock.calls.length).toBe(1);
       expect(console.error.mock.calls[0][0]).toBe(
@@ -166,7 +137,7 @@ describe('ReactClass-spec', function() {
       },
       render: function() {
         return <div />;
-      }
+      },
     });
     expect(console.error.argsForCall.length).toBe(1);
     expect(console.error.argsForCall[0][0]).toBe(
@@ -175,13 +146,14 @@ describe('ReactClass-spec', function() {
       'because the function is expected to return a value.'
     );
 
-    var NamedComponent = React.createClass({
+    React.createClass({
+      displayName: 'NamedComponent',
       componentShouldUpdate: function() {
         return false;
       },
       render: function() {
         return <div />;
-      }
+      },
     });
     expect(console.error.argsForCall.length).toBe(2);
     expect(console.error.argsForCall[1][0]).toBe(
@@ -189,8 +161,22 @@ describe('ReactClass-spec', function() {
       'mean shouldComponentUpdate()? The name is phrased as a question ' +
       'because the function is expected to return a value.'
     );
+  });
 
-    <NamedComponent />; // Shut up lint
+  it('should warn when mispelling componentWillReceiveProps', function() {
+    React.createClass({
+      componentWillRecieveProps: function() {
+        return false;
+      },
+      render: function() {
+        return <div />;
+      },
+    });
+    expect(console.error.argsForCall.length).toBe(1);
+    expect(console.error.argsForCall[0][0]).toBe(
+      'Warning: A component has a method called componentWillRecieveProps(). Did you ' +
+      'mean componentWillReceiveProps()?'
+    );
   });
 
   it('should throw if a reserved property is in statics', function() {
@@ -199,14 +185,14 @@ describe('ReactClass-spec', function() {
         statics: {
           getDefaultProps: function() {
             return {
-              foo: 0
+              foo: 0,
             };
-          }
+          },
         },
 
         render: function() {
           return <span />;
-        }
+        },
       });
     }).toThrow(
       'Invariant Violation: ReactClass: You are attempting to ' +
@@ -222,17 +208,17 @@ describe('ReactClass-spec', function() {
     React.createClass({
       mixins: [{}],
       propTypes: {
-        foo: React.PropTypes.string
+        foo: React.PropTypes.string,
       },
       contextTypes: {
-        foo: React.PropTypes.string
+        foo: React.PropTypes.string,
       },
       childContextTypes: {
-        foo: React.PropTypes.string
+        foo: React.PropTypes.string,
       },
       render: function() {
         return <div />;
-      }
+      },
     });
     expect(console.error.argsForCall.length).toBe(4);
     expect(console.error.argsForCall[0][0]).toBe(
@@ -262,12 +248,12 @@ describe('ReactClass-spec', function() {
         jkl: 'mno',
         pqr: function() {
           return this;
-        }
+        },
       },
 
       render: function() {
         return <span />;
-      }
+      },
     });
     var instance = <Component />;
     instance = ReactTestUtils.renderIntoDocument(instance);
@@ -287,12 +273,12 @@ describe('ReactClass-spec', function() {
     var Component = React.createClass({
       getInitialState: function() {
         return {
-          occupation: 'clown'
+          occupation: 'clown',
         };
       },
       render: function() {
         return <span />;
-      }
+      },
     });
     var instance = <Component />;
     instance = ReactTestUtils.renderIntoDocument(instance);
@@ -302,26 +288,26 @@ describe('ReactClass-spec', function() {
   it('renders based on context getInitialState', function() {
     var Foo = React.createClass({
       contextTypes: {
-        className: React.PropTypes.string
+        className: React.PropTypes.string,
       },
       getInitialState() {
         return {className: this.context.className};
       },
       render() {
         return <span className={this.state.className} />;
-      }
+      },
     });
 
     var Outer = React.createClass({
       childContextTypes: {
-        className: React.PropTypes.string
+        className: React.PropTypes.string,
       },
       getChildContext() {
         return {className: 'foo'};
       },
       render() {
         return <Foo />;
-      }
+      },
     });
 
     var container = document.createElement('div');
@@ -337,7 +323,7 @@ describe('ReactClass-spec', function() {
         },
         render: function() {
           return <span />;
-        }
+        },
       });
       var instance = <Component />;
       expect(function() {
@@ -356,7 +342,7 @@ describe('ReactClass-spec', function() {
       },
       render: function() {
         return <span />;
-      }
+      },
     });
     expect(
       () => ReactTestUtils.renderIntoDocument(<Component />)
@@ -367,7 +353,7 @@ describe('ReactClass-spec', function() {
     var Component = React.createClass({
       render() {
         return <div />;
-      }
+      },
     });
 
     expect(() => Component()).toThrow();
@@ -382,7 +368,7 @@ describe('ReactClass-spec', function() {
     var MyComponent = React.createClass({
       render: function() {
         return <div />;
-      }
+      },
     });
 
     var container = document.createElement('div');

@@ -19,7 +19,7 @@ var SyntheticUIEvent = require('SyntheticUIEvent');
  * @see http://www.w3.org/TR/DOM-Level-3-Events/
  */
 var FocusEventInterface = {
-  relatedTarget: null
+  relatedTarget: null,
 };
 
 /**
@@ -28,8 +28,8 @@ var FocusEventInterface = {
  * @param {object} nativeEvent Native browser event.
  * @extends {SyntheticUIEvent}
  */
-function SyntheticFocusEvent(dispatchConfig, dispatchMarker, nativeEvent) {
-  SyntheticUIEvent.call(this, dispatchConfig, dispatchMarker, nativeEvent);
+function SyntheticFocusEvent(dispatchConfig, dispatchMarker, nativeEvent, nativeEventTarget) {
+  SyntheticUIEvent.call(this, dispatchConfig, dispatchMarker, nativeEvent, nativeEventTarget);
 }
 
 SyntheticUIEvent.augmentClass(SyntheticFocusEvent, FocusEventInterface);

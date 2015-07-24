@@ -6,7 +6,6 @@
  * LICENSE file in the root directory of this source tree. An additional grant
  * of patent rights can be found in the PATENTS file in the same directory.
  */
-/* jshint browser: true */
 /* jslint evil: true */
 /*eslint-disable no-eval */
 /*eslint-disable block-scoped-var */
@@ -160,7 +159,8 @@ function run(code, url, options) {
  * Load script from the provided url and pass the content to the callback.
  *
  * @param {string} url The location of the script src
- * @param {function} callback Function to call with the content of url
+ * @param {function} successCallback Function to call with the content of url
+ * @param {function} errorCallback Function to call if error
  * @internal
  */
 function load(url, successCallback, errorCallback) {
@@ -231,11 +231,10 @@ function loadScripts(scripts) {
       dummyAnchor.href = script.src;
       sourceFilename = dummyAnchor.pathname.substr(1);
     }
-    console.log(sourceFilename);
 
     var options = {
       sourceMapInline: true,
-      sourceFilename: sourceFilename
+      sourceFilename: sourceFilename,
     };
     if (/;harmony=true(;|$)/.test(script.type)) {
       options.harmony = true;
@@ -255,7 +254,7 @@ function loadScripts(scripts) {
         content: null,
         loaded: false,
         url: script.src,
-        options: options
+        options: options,
       };
 
       load(script.src, function(content) {
@@ -274,7 +273,7 @@ function loadScripts(scripts) {
         content: script.innerHTML,
         loaded: true,
         url: null,
-        options: options
+        options: options,
       };
     }
   });
@@ -326,5 +325,5 @@ if (typeof window !== 'undefined' && window !== null) {
 
 module.exports = {
   transform: transformReact,
-  exec: exec
+  exec: exec,
 };

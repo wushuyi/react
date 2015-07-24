@@ -23,7 +23,6 @@ var ReactFragment = require('ReactFragment');
 var ReactPropTypeLocations = require('ReactPropTypeLocations');
 var ReactPropTypeLocationNames = require('ReactPropTypeLocationNames');
 var ReactCurrentOwner = require('ReactCurrentOwner');
-var ReactNativeComponent = require('ReactNativeComponent');
 
 var getIteratorFn = require('getIteratorFn');
 var invariant = require('invariant');
@@ -97,10 +96,18 @@ function validateExplicitKey(element, parentType) {
   }
   element._store.validated = true;
 
-  warnAndMonitorForKeyUse(
-    'Each child in an array or iterator should have a unique "key" prop.',
-    element,
-    parentType
+  var addenda = getAddendaForKeyUse('uniqueKey', element, parentType);
+  if (addenda === null) {
+    // we already showed the warning
+    return;
+  }
+  warning(
+    false,
+    'Each child in an array or iterator should have a unique "key" prop.' +
+    '%s%s%s',
+    addenda.parentOrOwner || '',
+    addenda.childOwner || '',
+    addenda.url || ''
   );
 }
 
@@ -117,10 +124,18 @@ function validatePropertyKey(name, element, parentType) {
   if (!NUMERIC_PROPERTY_REGEX.test(name)) {
     return;
   }
-  warnAndMonitorForKeyUse(
-    'Child objects should have non-numeric keys so ordering is preserved.',
-    element,
-    parentType
+  var addenda = getAddendaForKeyUse('numericKeys', element, parentType);
+  if (addenda === null) {
+    // we already showed the warning
+    return;
+  }
+  warning(
+    false,
+    'Child objects should have non-numeric keys so ordering is preserved.' +
+    '%s%s%s',
+    addenda.parentOrOwner || '',
+    addenda.childOwner || '',
+    addenda.url || ''
   );
 }
 
@@ -128,48 +143,47 @@ function validatePropertyKey(name, element, parentType) {
  * Shared warning and monitoring code for the key warnings.
  *
  * @internal
- * @param {string} message The base warning that gets output.
+ * @param {string} messageType A key used for de-duping warnings.
  * @param {ReactElement} element Component that requires a key.
  * @param {*} parentType element's parent's type.
+ * @returns {?object} A set of addenda to use in the warning message, or null
+ * if the warning has already been shown before (and shouldn't be shown again).
  */
-function warnAndMonitorForKeyUse(message, element, parentType) {
+function getAddendaForKeyUse(messageType, element, parentType) {
   var ownerName = getCurrentOwnerDisplayName();
   var parentName = typeof parentType === 'string' ?
     parentType : parentType.displayName || parentType.name;
 
   var useName = ownerName || parentName;
-  var memoizer = ownerHasKeyUseWarning[message] || (
-    ownerHasKeyUseWarning[message] = {}
+  var memoizer = ownerHasKeyUseWarning[messageType] || (
+    ownerHasKeyUseWarning[messageType] = {}
   );
-  if (memoizer.hasOwnProperty(useName)) {
-    return;
+  if (memoizer[useName]) {
+    return null;
   }
   memoizer[useName] = true;
 
-  var parentOrOwnerAddendum =
-    ownerName ? ` Check the render method of ${ownerName}.` :
-    parentName ? ` Check the React.render call using <${parentName}>.` :
-    '';
+  var addenda = {
+    parentOrOwner:
+      ownerName ? ` Check the render method of ${ownerName}.` :
+      parentName ? ` Check the React.render call using <${parentName}>.` :
+      null,
+    url: ' See https://fb.me/react-warning-keys for more information.',
+    childOwner: null,
+  };
 
   // Usually the current owner is the offender, but if it accepts children as a
   // property, it may be the creator of the child that's responsible for
   // assigning it a key.
-  var childOwnerAddendum = '';
   if (element &&
       element._owner &&
       element._owner !== ReactCurrentOwner.current) {
-    // Name of the component that originally created this child.
-    var childOwnerName = getName(element._owner);
-
-    childOwnerAddendum = ` It was passed a child from ${childOwnerName}.`;
+    // Give the component that originally created this child.
+    addenda.childOwner =
+      ` It was passed a child from ${getName(element._owner)}.`;
   }
 
-  warning(
-    false,
-    message + '%s%s See https://fb.me/react-warning-keys for more information.',
-    parentOrOwnerAddendum,
-    childOwnerAddendum
-  );
+  return addenda;
 }
 
 /**
@@ -271,90 +285,6 @@ function checkPropTypes(componentName, propTypes, props, location) {
   }
 }
 
-var warnedPropsMutations = {};
-
-/**
- * Warn about mutating props when setting `propName` on `element`.
- *
- * @param {string} propName The string key within props that was set
- * @param {ReactElement} element
- */
-function warnForPropsMutation(propName, element) {
-  var type = element.type;
-  var elementName = typeof type === 'string' ? type : type.displayName;
-  var ownerName = element._owner ?
-    element._owner.getPublicInstance().constructor.displayName : null;
-
-  var warningKey = propName + '|' + elementName + '|' + ownerName;
-  if (warnedPropsMutations.hasOwnProperty(warningKey)) {
-    return;
-  }
-  warnedPropsMutations[warningKey] = true;
-
-  var elementInfo = '';
-  if (elementName) {
-    elementInfo = ' <' + elementName + ' />';
-  }
-  var ownerInfo = '';
-  if (ownerName) {
-    ownerInfo = ' The element was created by ' + ownerName + '.';
-  }
-
-  warning(
-    false,
-    'Don\'t set .props.%s of the React component%s. Instead, specify the ' +
-    'correct value when initially creating the element or use ' +
-    'React.cloneElement to make a new element with updated props.%s',
-    propName,
-    elementInfo,
-    ownerInfo
-  );
-}
-
-// Inline Object.is polyfill
-function is(a, b) {
-  if (a !== a) {
-    // NaN
-    return b !== b;
-  }
-  if (a === 0 && b === 0) {
-    // +-0
-    return 1 / a === 1 / b;
-  }
-  return a === b;
-}
-
-/**
- * Given an element, check if its props have been mutated since element
- * creation (or the last call to this function). In particular, check if any
- * new props have been added, which we can't directly catch by defining warning
- * properties on the props object.
- *
- * @param {ReactElement} element
- */
-function checkAndWarnForMutatedProps(element) {
-  if (!element._store) {
-    // Element was created using `new ReactElement` directly or with
-    // `ReactElement.createElement`; skip mutation checking
-    return;
-  }
-
-  var originalProps = element._store.originalProps;
-  var props = element.props;
-
-  for (var propName in props) {
-    if (props.hasOwnProperty(propName)) {
-      if (!originalProps.hasOwnProperty(propName) ||
-          !is(originalProps[propName], props[propName])) {
-        warnForPropsMutation(propName, element);
-
-        // Copy over the new value so that the two props objects match again
-        originalProps[propName] = props[propName];
-      }
-    }
-  }
-}
-
 /**
  * Given an element, validate that its props follow the propTypes definition,
  * provided by the type.
@@ -362,18 +292,10 @@ function checkAndWarnForMutatedProps(element) {
  * @param {ReactElement} element
  */
 function validatePropTypes(element) {
-  if (!(typeof element.type === 'string' ||
-      typeof element.type === 'function')) {
-    // This has already warned. Don't throw.
+  var componentClass = element.type;
+  if (typeof componentClass !== 'function') {
     return;
   }
-  // Extract the component class from the element. Converts string types
-  // to a composite class which may have propTypes.
-  // TODO: Validating a string's propTypes is not decoupled from the
-  // rendering target which is problematic.
-  var componentClass = ReactNativeComponent.getComponentClassForElement(
-    element
-  );
   var name = componentClass.displayName || componentClass.name;
   if (componentClass.propTypes) {
     checkPropTypes(
@@ -393,8 +315,6 @@ function validatePropTypes(element) {
 }
 
 var ReactElementValidator = {
-
-  checkAndWarnForMutatedProps: checkAndWarnForMutatedProps,
 
   createElement: function(type, props, children) {
     // We warn in this case but don't throw. We expect the element creation to
@@ -445,10 +365,10 @@ var ReactElementValidator = {
                 'before passing it to createFactory.'
               );
               Object.defineProperty(this, 'type', {
-                value: type
+                value: type,
               });
               return type;
-            }
+            },
           }
         );
       } catch (x) {
@@ -467,7 +387,7 @@ var ReactElementValidator = {
     }
     validatePropTypes(newElement);
     return newElement;
-  }
+  },
 
 };
 

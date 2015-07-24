@@ -78,19 +78,19 @@ var eventTypes = {
   beforeInput: {
     phasedRegistrationNames: {
       bubbled: keyOf({onBeforeInput: null}),
-      captured: keyOf({onBeforeInputCapture: null})
+      captured: keyOf({onBeforeInputCapture: null}),
     },
     dependencies: [
       topLevelTypes.topCompositionEnd,
       topLevelTypes.topKeyPress,
       topLevelTypes.topTextInput,
-      topLevelTypes.topPaste
-    ]
+      topLevelTypes.topPaste,
+    ],
   },
   compositionEnd: {
     phasedRegistrationNames: {
       bubbled: keyOf({onCompositionEnd: null}),
-      captured: keyOf({onCompositionEndCapture: null})
+      captured: keyOf({onCompositionEndCapture: null}),
     },
     dependencies: [
       topLevelTypes.topBlur,
@@ -98,13 +98,13 @@ var eventTypes = {
       topLevelTypes.topKeyDown,
       topLevelTypes.topKeyPress,
       topLevelTypes.topKeyUp,
-      topLevelTypes.topMouseDown
-    ]
+      topLevelTypes.topMouseDown,
+    ],
   },
   compositionStart: {
     phasedRegistrationNames: {
       bubbled: keyOf({onCompositionStart: null}),
-      captured: keyOf({onCompositionStartCapture: null})
+      captured: keyOf({onCompositionStartCapture: null}),
     },
     dependencies: [
       topLevelTypes.topBlur,
@@ -112,13 +112,13 @@ var eventTypes = {
       topLevelTypes.topKeyDown,
       topLevelTypes.topKeyPress,
       topLevelTypes.topKeyUp,
-      topLevelTypes.topMouseDown
-    ]
+      topLevelTypes.topMouseDown,
+    ],
   },
   compositionUpdate: {
     phasedRegistrationNames: {
       bubbled: keyOf({onCompositionUpdate: null}),
-      captured: keyOf({onCompositionUpdateCapture: null})
+      captured: keyOf({onCompositionUpdateCapture: null}),
     },
     dependencies: [
       topLevelTypes.topBlur,
@@ -126,9 +126,9 @@ var eventTypes = {
       topLevelTypes.topKeyDown,
       topLevelTypes.topKeyPress,
       topLevelTypes.topKeyUp,
-      topLevelTypes.topMouseDown
-    ]
-  }
+      topLevelTypes.topMouseDown,
+    ],
+  },
 };
 
 // Track whether we've ever handled a keypress on the space key.
@@ -237,7 +237,8 @@ function extractCompositionEvent(
   topLevelType,
   topLevelTarget,
   topLevelTargetID,
-  nativeEvent
+  nativeEvent,
+  nativeEventTarget
 ) {
   var eventType;
   var fallbackData;
@@ -271,7 +272,8 @@ function extractCompositionEvent(
   var event = SyntheticCompositionEvent.getPooled(
     eventType,
     topLevelTargetID,
-    nativeEvent
+    nativeEvent,
+    nativeEventTarget
   );
 
   if (fallbackData) {
@@ -411,7 +413,8 @@ function extractBeforeInputEvent(
   topLevelType,
   topLevelTarget,
   topLevelTargetID,
-  nativeEvent
+  nativeEvent,
+  nativeEventTarget
 ) {
   var chars;
 
@@ -430,7 +433,8 @@ function extractBeforeInputEvent(
   var event = SyntheticInputEvent.getPooled(
     eventTypes.beforeInput,
     topLevelTargetID,
-    nativeEvent
+    nativeEvent,
+    nativeEventTarget
   );
 
   event.data = chars;
@@ -472,23 +476,26 @@ var BeforeInputEventPlugin = {
     topLevelType,
     topLevelTarget,
     topLevelTargetID,
-    nativeEvent
+    nativeEvent,
+    nativeEventTarget
   ) {
     return [
       extractCompositionEvent(
         topLevelType,
         topLevelTarget,
         topLevelTargetID,
-        nativeEvent
+        nativeEvent,
+        nativeEventTarget
       ),
       extractBeforeInputEvent(
         topLevelType,
         topLevelTarget,
         topLevelTargetID,
-        nativeEvent
-      )
+        nativeEvent,
+        nativeEventTarget
+      ),
     ];
-  }
+  },
 };
 
 module.exports = BeforeInputEventPlugin;

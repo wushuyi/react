@@ -19,7 +19,7 @@ var SyntheticMouseEvent = require('SyntheticMouseEvent');
  * @see http://www.w3.org/TR/DOM-Level-3-Events/
  */
 var DragEventInterface = {
-  dataTransfer: null
+  dataTransfer: null,
 };
 
 /**
@@ -28,8 +28,8 @@ var DragEventInterface = {
  * @param {object} nativeEvent Native browser event.
  * @extends {SyntheticUIEvent}
  */
-function SyntheticDragEvent(dispatchConfig, dispatchMarker, nativeEvent) {
-  SyntheticMouseEvent.call(this, dispatchConfig, dispatchMarker, nativeEvent);
+function SyntheticDragEvent(dispatchConfig, dispatchMarker, nativeEvent, nativeEventTarget) {
+  SyntheticMouseEvent.call(this, dispatchConfig, dispatchMarker, nativeEvent, nativeEventTarget);
 }
 
 SyntheticMouseEvent.augmentClass(SyntheticDragEvent, DragEventInterface);

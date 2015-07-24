@@ -20,7 +20,7 @@ var SyntheticEvent = require('SyntheticEvent');
  *      /#events-inputevents
  */
 var InputEventInterface = {
-  data: null
+  data: null,
 };
 
 /**
@@ -32,8 +32,9 @@ var InputEventInterface = {
 function SyntheticInputEvent(
   dispatchConfig,
   dispatchMarker,
-  nativeEvent) {
-  SyntheticEvent.call(this, dispatchConfig, dispatchMarker, nativeEvent);
+  nativeEvent,
+  nativeEventTarget) {
+  SyntheticEvent.call(this, dispatchConfig, dispatchMarker, nativeEvent, nativeEventTarget);
 }
 
 SyntheticEvent.augmentClass(
